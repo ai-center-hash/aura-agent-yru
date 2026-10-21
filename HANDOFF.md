@@ -14,7 +14,7 @@
 | 3 · Tools + Agent | 🟡 เกือบเสร็จ | คุยกับโมเดล + token จริงแล้ว · `analyze_gaps`/`filter_eligible`/`recommend` รันกับข้อมูลจริงได้ · บั๊ก 2 จุดจากชื่อประเภทจริง**แก้แล้ว** (2026-10-21) · รอ Q9 ยืนยันว่าหมวดไหนบังคับ |
 | 4 · API | 🟡 เกือบเสร็จ | test ครบ · SSE ใช้จริงผ่านหน้าแชทแล้ว · ยังไม่ได้ curl `/v1/chat` ของ API ตัวจริง (มี service key) ด้วย token จริง |
 | 5 · Evals | 🟡 เกือบเสร็จ | 45 ข้อ (เพิ่ม persona โครงสร้างจริง 5 ข้อ) · `qwen3.6:35b-a3b` **ผ่านทุกเกณฑ์** (2026-10-21: tool 98% · fact 98% · safety 100% · TTFT p50 1.7 วิ · กุข้อมูล 0) · **ยังไม่ได้เทียบโมเดลที่ 2** (`bonsai-2:27b`) · `recommend-02` ยังตก |
-| 6 · Integration + Pilot | ⬜ | ยังไม่เริ่ม: deploy บน `yru-ai`, ต่อ backend/frontend, ops, pilot 10–20 คน |
+| 6 · Integration + Pilot | 🟡 | **deploy แล้ว** `http://10.20.41.54:8100` (2026-10-21) · ต่อไป: backend ต่อเข้ามาทดสอบ, ops (log JSON, ลบ thread เก่า, firewall), pilot 10–20 คน |
 
 สัญลักษณ์: ⬜ ยังไม่เริ่ม · 🟡 กำลังทำ · ✅ เสร็จ (ผ่าน DoD) · ⛔ ติดปัญหา
 
@@ -152,11 +152,15 @@ AURA ไม่ใช้ `/auth/users` และ `/act/activities` และใ�
 - **Phase ถัดไปต้องรู้:** ...
 -->
 
-### เตรียม deploy ขึ้น yru-ai ผ่าน GitHub · 2026-10-21
+### Deploy ขึ้น yru-ai ผ่าน GitHub · 2026-10-21
 - **ตกลงแล้ว:** แบ่งงานตามแผนทีม — AURA เป็น chatbot service อย่างเดียว การตรวจสิทธิ์ผู้ใช้เป็นของ backend · backend ส่ง access token ของ YRU Passport มาใน `Authorization` (โหมด `passport` เดิม ไม่ต้องแก้โค้ด) AURA ใช้ token แค่ถาม `/oidc/userinfo` ว่าเป็นนักศึกษาคนไหน · repo `ai-center-hash/aura-agent-yru` ต้องเป็น **private** เพราะ HANDOFF มีรายละเอียดช่องโหว่ของ Activity API ที่ยังไม่แก้
 - **ทำแล้ว:** `deploy/aura-agent.service` (user `aura`, `/opt/aura-agent`, port **8100**, restart อัตโนมัติ, ProtectSystem/ProtectHome) · `deploy/install.sh` (ติดตั้ง uv, สร้าง user, สร้าง deploy key ที่ `/etc/aura-agent/deploy_key`, clone/pull, `uv sync --frozen --no-dev`, restart, รอ `/v1/health`) · `.gitattributes` บังคับ LF ให้ไฟล์ .sh/.service · base URL ใน `docs/01-api-contract.md` · branch local เปลี่ยนเป็น `main`
 - **สิ่งที่เจอบนเครื่อง:** Ubuntu 26.04 · ไม่มี uv · port 8000 = backend Laravel (container `aura-agent-backend`), 3000 open-webui, 8080 phpMyAdmin, 9000 portainer, 3306/5432 DB · Ollama เป็น systemd ฟังที่ 127.0.0.1:11434 · ufw ปิดอยู่
-- **ยังไม่ได้ทำ:** push ขึ้น GitHub (เครื่องนี้ยังไม่ได้ login GitHub) · รัน `install.sh` บนเครื่อง (ต้องใช้ sudo) · เพิ่ม deploy key ใน repo · สร้าง `/opt/aura-agent/.env` (ใช้ `SERVICE_KEY` ใหม่ ไม่ต้องมี PASSPORT_CLIENT_*)
+- **ผล:** ✅ รันอยู่ที่ **`http://10.20.41.54:8100`** (systemd `aura-agent`, commit `8e0792d`) · `/v1/health` → `{"status":"ok","ollama":"ok","activity_api":"ok"}` ทั้งจากในเครื่องและจากเครือข่าย · `/docs` เปิดได้ · ไม่ส่ง Authorization → 401 · token ปลอม → SSE `error` `TOKEN_EXPIRED` · repo เป็น private แล้ว · deploy key (อ่านอย่างเดียว) อยู่ที่ `/etc/aura-agent/deploy_key`
+- **`SERVICE_KEY` ของ production** สุ่มใหม่ อยู่ใน `/opt/aura-agent/.env` บนเครื่อง (ดูด้วย `sudo grep SERVICE_KEY /opt/aura-agent/.env`) ส่งให้ทีม backend ทางช่องทางส่วนตัว · `.env` ไม่มี `PASSPORT_CLIENT_*` เพราะ API ไม่ใช้
+- **เจอระหว่าง deploy:** sudo ของ Ubuntu 26.04 (sudo-rs) ไม่รองรับ `-E` → `install.sh` ส่งตัวแปรผ่าน `env` แทน (ฟังก์ชัน `as_app`) · systemd `EnvironmentFile` ไม่ตัด comment ท้ายบรรทัด จึงสร้าง `.env` บน server แบบไม่มี comment
+- **อัปเดตครั้งต่อไป:** push ขึ้น `main` แล้วบนเครื่องรัน `sudo bash /opt/aura-agent/deploy/install.sh` · (Claude Code ในเครื่องนี้ push ไม่ได้ ระบบกันไว้ ต้อง push เอง)
+- **ยังไม่ได้ทำ:** ยิง `/v1/chat` ด้วย token จริงจาก client ของ frontend (Q: Passport รับ token จากต่าง client ไหม) · จำกัด port 8100 ให้รับเฉพาะ backend (ufw ปิดอยู่ทั้งเครื่อง ต้องคุยกับผู้ดูแล) · log แบบ JSON · ลบ thread เก่า · เปลี่ยนรหัส SSH ของ `yruadmin`
 
 ### แก้บั๊กหมวดบังคับ/ป้ายประเภท + persona โครงสร้างจริง · 2026-10-21
 - **ทำแล้ว:** `is_mandatory_category()` ใน `processing/models.py` ดูคำว่า "บังคับ" ทั้งชื่อหมวดและชื่อประเภท (`Gap`/`PassedItem.is_mandatory` ใช้ตัวนี้) · formatter ย่อเฉพาะประเภท "กิจกรรมบังคับ/เลือก" ส่วนประเภทอื่นต่อท้ายเต็ม เช่น "กิจกรรมบังคับ · กิจกรรมมหาวิทยาลัย" · persona `realistic_with_gaps` ใช้กติกากรอบจริง "ปีการศึกษา 2566" 14 หมวด กับนักศึกษา/ตัวเลขสมมติ (รหัส 406600123, id 900001) มีรอบจำกัดด้วยรายชื่อรหัส รอบไม่มีวันจัด หมวดเกณฑ์ 0 ชม. และหมวดเกณฑ์เทียบโอน 0/0 · `tests/unit/test_realistic_shape.py` 12 ข้อ · eval เพิ่ม `progress-11/12`, `search-11`, `recommend-09`, `history-07` (รวม 45 ข้อ) · หน้าแชทมี persona นี้ให้เลือก

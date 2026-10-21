@@ -6,8 +6,8 @@
 
 รัน AURA-AGENT **บนเครื่องเดียวกับ Ollama** (`10.20.41.54`) จะเรียก Ollama ผ่าน `localhost` ได้ ไม่ต้องใช้ tunnel
 
-- [ ] ติดตั้งด้วย `uv sync --frozen` แล้วรันเป็น systemd service (`aura-agent.service`, user แยก, restart อัตโนมัติ) → เตรียมแล้วใน [deploy/](../../deploy/) (`sudo bash deploy/install.sh` ใช้ทั้งติดตั้งครั้งแรกและอัปเดต)
-- [ ] `.env` บน server: `OLLAMA_BASE_URL=http://localhost:11434` และ `SERVICE_KEY` ใหม่ที่สุ่มยาว ≥ 32 ตัวอักษร
+- [x] ติดตั้งด้วย `uv sync --frozen` แล้วรันเป็น systemd service (`aura-agent.service`, user แยก, restart อัตโนมัติ) → เตรียมแล้วใน [deploy/](../../deploy/) (`sudo bash deploy/install.sh` ใช้ทั้งติดตั้งครั้งแรกและอัปเดต)
+- [x] `.env` บน server: `OLLAMA_BASE_URL=http://localhost:11434` และ `SERVICE_KEY` ใหม่ที่สุ่มยาว ≥ 32 ตัวอักษร
 - [ ] firewall: port **8100** รับเฉพาะ IP ของ backend, port 11434 ไม่เปิดออกนอกเครื่อง (port 8000 ของ yru-ai เป็นของ backend Laravel อยู่แล้ว · ตอนนี้ ufw ปิดอยู่ ต้องคุยกับผู้ดูแลเครื่องก่อนเปิด เพราะมี service อื่นของทีมรันอยู่)
 
 ## 2. เชื่อมกับ Backend
