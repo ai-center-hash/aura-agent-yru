@@ -1,0 +1,978 @@
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 900001,
+      "name": "นักศึกษาสมมติ โครงสร้างจริง",
+      "student_id": "406600123",
+      "email": "realistic@example.invalid",
+      "level": "ปริญญาตรี",
+      "major": "วิทยาการคอมพิวเตอร์",
+      "faculty": "วิทยาศาสตร์เทคโนโลยีและการเกษตร",
+      "student_status": "normal"
+    },
+    "frame": {
+      "id": 1,
+      "title": "ปีการศึกษา 2566",
+      "start_date": null,
+      "end_date": null,
+      "is_restricted": true,
+      "target_curriculums": null,
+      "target_faculties": null,
+      "target_student_codes": null,
+      "target_student_status": null,
+      "target_student_year_prefix": [
+        "66"
+      ]
+    },
+    "summary": {
+      "total_activities": 23,
+      "total_hours": 115.0,
+      "overall_status": "not_passed"
+    },
+    "categories": [
+      {
+        "category_id": 1,
+        "category_name": "กิจกรรมบังคับ",
+        "category_description": null,
+        "type_id": 2,
+        "type_name": "กิจกรรมมหาวิทยาลัย",
+        "activities": [
+          {
+            "id": 50010,
+            "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 1",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50011,
+            "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 2",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-02-15 08:45:00",
+            "checkout_at": "2025-02-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50012,
+            "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 3",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-03-15 08:45:00",
+            "checkout_at": "2025-03-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50013,
+            "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 4",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-04-15 08:45:00",
+            "checkout_at": "2025-04-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50014,
+            "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 5",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-05-15 08:45:00",
+            "checkout_at": "2025-05-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50015,
+            "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 6",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-06-15 08:45:00",
+            "checkout_at": "2025-06-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 101,
+            "seq": 1,
+            "category_id": 1,
+            "category_name": "กิจกรรมบังคับ",
+            "aspect_name": "กิจกรรมบังคับ",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 9,
+              "normal_hour_min": 30,
+              "transfer_activity_min": 9,
+              "transfer_hour_min": 30
+            },
+            "count": 6,
+            "total_hours": 18.0,
+            "is_passed": false,
+            "activities": [
+              {
+                "id": 50010,
+                "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 1",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50011,
+                "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 2",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-02-15 08:45:00",
+                "checkout_at": "2025-02-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50012,
+                "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 3",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-03-15 08:45:00",
+                "checkout_at": "2025-03-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50013,
+                "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 4",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-04-15 08:45:00",
+                "checkout_at": "2025-04-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50014,
+                "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 5",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-05-15 08:45:00",
+                "checkout_at": "2025-05-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50015,
+                "title": "กิจกรรมสมมติ หมวด 1 ครั้งที่ 6",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-06-15 08:45:00",
+                "checkout_at": "2025-06-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 96,
+        "category_name": "เสริมอาชีพ (หลักสูตรระยะสั้น)",
+        "category_description": null,
+        "type_id": 2,
+        "type_name": "กิจกรรมมหาวิทยาลัย",
+        "activities": [
+          {
+            "id": 50960,
+            "title": "กิจกรรมสมมติ หมวด 96 ครั้งที่ 1",
+            "duration_hours": 18.0,
+            "attendance_hours": 18.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50961,
+            "title": "กิจกรรมสมมติ หมวด 96 ครั้งที่ 2",
+            "duration_hours": 18.0,
+            "attendance_hours": 18.0,
+            "checkin_at": "2025-02-15 08:45:00",
+            "checkout_at": "2025-02-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 102,
+            "seq": 2,
+            "category_id": 96,
+            "category_name": "เสริมอาชีพ (หลักสูตรระยะสั้น)",
+            "aspect_name": "เสริมอาชีพ (หลักสูตรระยะสั้น)",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 36,
+              "transfer_activity_min": 2,
+              "transfer_hour_min": 36
+            },
+            "count": 2,
+            "total_hours": 36.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 50960,
+                "title": "กิจกรรมสมมติ หมวด 96 ครั้งที่ 1",
+                "duration_hours": 18.0,
+                "attendance_hours": 18.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50961,
+                "title": "กิจกรรมสมมติ หมวด 96 ครั้งที่ 2",
+                "duration_hours": 18.0,
+                "attendance_hours": 18.0,
+                "checkin_at": "2025-02-15 08:45:00",
+                "checkout_at": "2025-02-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 111,
+        "category_name": "ชมรมนักศึกษา",
+        "category_description": null,
+        "type_id": 2,
+        "type_name": "กิจกรรมมหาวิทยาลัย",
+        "activities": [
+          {
+            "id": 51110,
+            "title": "กิจกรรมสมมติ หมวด 111 ครั้งที่ 1",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 103,
+            "seq": 3,
+            "category_id": 111,
+            "category_name": "ชมรมนักศึกษา",
+            "aspect_name": "ชมรมนักศึกษา",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 0,
+              "transfer_activity_min": 2,
+              "transfer_hour_min": 0
+            },
+            "count": 1,
+            "total_hours": 3.0,
+            "is_passed": false,
+            "activities": [
+              {
+                "id": 51110,
+                "title": "กิจกรรมสมมติ หมวด 111 ครั้งที่ 1",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 9,
+        "category_name": "จิตอาสา (ระดับมหาวิทยาลัย)  ชั้นปีที่ 1",
+        "category_description": null,
+        "type_id": 2,
+        "type_name": "กิจกรรมมหาวิทยาลัย",
+        "activities": [
+          {
+            "id": 50090,
+            "title": "กิจกรรมสมมติ หมวด 9 ครั้งที่ 1",
+            "duration_hours": 10.0,
+            "attendance_hours": 10.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 104,
+            "seq": 4,
+            "category_id": 9,
+            "category_name": "จิตอาสา (ระดับมหาวิทยาลัย)  ชั้นปีที่ 1",
+            "aspect_name": "จิตอาสา (ระดับมหาวิทยาลัย)  ชั้นปีที่ 1",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 1,
+              "normal_hour_min": 10,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 10
+            },
+            "count": 1,
+            "total_hours": 10.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 50090,
+                "title": "กิจกรรมสมมติ หมวด 9 ครั้งที่ 1",
+                "duration_hours": 10.0,
+                "attendance_hours": 10.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 20,
+        "category_name": "จิตอาสา (ระดับมหาวิทยาลัย) ชั้นปีที่ 2",
+        "category_description": null,
+        "type_id": 2,
+        "type_name": "กิจกรรมมหาวิทยาลัย",
+        "activities": [],
+        "frame_items": [
+          {
+            "id": 105,
+            "seq": 5,
+            "category_id": 20,
+            "category_name": "จิตอาสา (ระดับมหาวิทยาลัย) ชั้นปีที่ 2",
+            "aspect_name": "จิตอาสา (ระดับมหาวิทยาลัย) ชั้นปีที่ 2",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 1,
+              "normal_hour_min": 10,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 5
+            },
+            "count": 0,
+            "total_hours": 0.0,
+            "is_passed": false,
+            "activities": [],
+            "planned_activities": [
+              {
+                "id": 7004,
+                "title": "จิตอาสาปลูกต้นไม้ (รอกำหนดวัน)",
+                "status": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "category_id": 21,
+        "category_name": "จิตอาสา (ระดับมหาวิทยาลัย) ชั้นปีที่ 3",
+        "category_description": null,
+        "type_id": 2,
+        "type_name": "กิจกรรมมหาวิทยาลัย",
+        "activities": [],
+        "frame_items": [
+          {
+            "id": 106,
+            "seq": 6,
+            "category_id": 21,
+            "category_name": "จิตอาสา (ระดับมหาวิทยาลัย) ชั้นปีที่ 3",
+            "aspect_name": "จิตอาสา (ระดับมหาวิทยาลัย) ชั้นปีที่ 3",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 1,
+              "normal_hour_min": 5,
+              "transfer_activity_min": 0,
+              "transfer_hour_min": 0
+            },
+            "count": 0,
+            "total_hours": 0.0,
+            "is_passed": false,
+            "activities": [],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 42,
+        "category_name": "จิตอาสา (ระดับคณะ) ชั้นปีที่ 3",
+        "category_description": null,
+        "type_id": 2,
+        "type_name": "กิจกรรมมหาวิทยาลัย",
+        "activities": [
+          {
+            "id": 50420,
+            "title": "กิจกรรมสมมติ หมวด 42 ครั้งที่ 1",
+            "duration_hours": 5.0,
+            "attendance_hours": 5.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 107,
+            "seq": 7,
+            "category_id": 42,
+            "category_name": "จิตอาสา (ระดับคณะ) ชั้นปีที่ 3",
+            "aspect_name": "จิตอาสา (ระดับคณะ) ชั้นปีที่ 3",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 1,
+              "normal_hour_min": 5,
+              "transfer_activity_min": 0,
+              "transfer_hour_min": 0
+            },
+            "count": 1,
+            "total_hours": 5.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 50420,
+                "title": "กิจกรรมสมมติ หมวด 42 ครั้งที่ 1",
+                "duration_hours": 5.0,
+                "attendance_hours": 5.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 24,
+        "category_name": "จิตอาสาภายนอกมหาวิทยาลัย",
+        "category_description": null,
+        "type_id": 2,
+        "type_name": "กิจกรรมมหาวิทยาลัย",
+        "activities": [
+          {
+            "id": 50240,
+            "title": "กิจกรรมสมมติ หมวด 24 ครั้งที่ 1",
+            "duration_hours": 10.0,
+            "attendance_hours": 10.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 108,
+            "seq": 8,
+            "category_id": 24,
+            "category_name": "จิตอาสาภายนอกมหาวิทยาลัย",
+            "aspect_name": "จิตอาสาภายนอกมหาวิทยาลัย",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 1,
+              "normal_hour_min": 10,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 5
+            },
+            "count": 1,
+            "total_hours": 10.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 50240,
+                "title": "กิจกรรมสมมติ หมวด 24 ครั้งที่ 1",
+                "duration_hours": 10.0,
+                "attendance_hours": 10.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 2,
+        "category_name": "ด้านคุณธรรมและจริยธรรม",
+        "category_description": null,
+        "type_id": 1,
+        "type_name": "กิจกรรมเพื่อเสริมสร้างสมรรถนะทั่วไป",
+        "activities": [
+          {
+            "id": 50020,
+            "title": "กิจกรรมสมมติ หมวด 2 ครั้งที่ 1",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50021,
+            "title": "กิจกรรมสมมติ หมวด 2 ครั้งที่ 2",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-02-15 08:45:00",
+            "checkout_at": "2025-02-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 109,
+            "seq": 9,
+            "category_id": 2,
+            "category_name": "ด้านคุณธรรมและจริยธรรม",
+            "aspect_name": "ด้านคุณธรรมและจริยธรรม",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 6,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 3
+            },
+            "count": 2,
+            "total_hours": 6.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 50020,
+                "title": "กิจกรรมสมมติ หมวด 2 ครั้งที่ 1",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50021,
+                "title": "กิจกรรมสมมติ หมวด 2 ครั้งที่ 2",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-02-15 08:45:00",
+                "checkout_at": "2025-02-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 3,
+        "category_name": "ด้านพัฒนาความรู้และทักษะปัญญา",
+        "category_description": null,
+        "type_id": 1,
+        "type_name": "กิจกรรมเพื่อเสริมสร้างสมรรถนะทั่วไป",
+        "activities": [
+          {
+            "id": 50030,
+            "title": "กิจกรรมสมมติ หมวด 3 ครั้งที่ 1",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50031,
+            "title": "กิจกรรมสมมติ หมวด 3 ครั้งที่ 2",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-02-15 08:45:00",
+            "checkout_at": "2025-02-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 110,
+            "seq": 10,
+            "category_id": 3,
+            "category_name": "ด้านพัฒนาความรู้และทักษะปัญญา",
+            "aspect_name": "ด้านพัฒนาความรู้และทักษะปัญญา",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 6,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 3
+            },
+            "count": 2,
+            "total_hours": 6.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 50030,
+                "title": "กิจกรรมสมมติ หมวด 3 ครั้งที่ 1",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50031,
+                "title": "กิจกรรมสมมติ หมวด 3 ครั้งที่ 2",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-02-15 08:45:00",
+                "checkout_at": "2025-02-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 4,
+        "category_name": "ด้านพัฒนาทักษะเสริมสร้างความสัมพันธ์ระหว่างบุคคลและความรับผิดชอบ",
+        "category_description": null,
+        "type_id": 1,
+        "type_name": "กิจกรรมเพื่อเสริมสร้างสมรรถนะทั่วไป",
+        "activities": [
+          {
+            "id": 50040,
+            "title": "กิจกรรมสมมติ หมวด 4 ครั้งที่ 1",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50041,
+            "title": "กิจกรรมสมมติ หมวด 4 ครั้งที่ 2",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-02-15 08:45:00",
+            "checkout_at": "2025-02-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 111,
+            "seq": 11,
+            "category_id": 4,
+            "category_name": "ด้านพัฒนาทักษะเสริมสร้างความสัมพันธ์ระหว่างบุคคลและความรับผิดชอบ",
+            "aspect_name": "ด้านพัฒนาทักษะเสริมสร้างความสัมพันธ์ระหว่างบุคคลและความรับผิดชอบ",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 6,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 3
+            },
+            "count": 2,
+            "total_hours": 6.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 50040,
+                "title": "กิจกรรมสมมติ หมวด 4 ครั้งที่ 1",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50041,
+                "title": "กิจกรรมสมมติ หมวด 4 ครั้งที่ 2",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-02-15 08:45:00",
+                "checkout_at": "2025-02-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 5,
+        "category_name": "ด้านส่งเสริมและพัฒนาสุขภาพ",
+        "category_description": null,
+        "type_id": 1,
+        "type_name": "กิจกรรมเพื่อเสริมสร้างสมรรถนะทั่วไป",
+        "activities": [
+          {
+            "id": 50050,
+            "title": "กิจกรรมสมมติ หมวด 5 ครั้งที่ 1",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 112,
+            "seq": 12,
+            "category_id": 5,
+            "category_name": "ด้านส่งเสริมและพัฒนาสุขภาพ",
+            "aspect_name": "ด้านส่งเสริมและพัฒนาสุขภาพ",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 6,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 3
+            },
+            "count": 1,
+            "total_hours": 3.0,
+            "is_passed": false,
+            "activities": [
+              {
+                "id": 50050,
+                "title": "กิจกรรมสมมติ หมวด 5 ครั้งที่ 1",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 7,
+        "category_name": "ด้านส่งเสริมศิลปะและวัฒนธรรม",
+        "category_description": null,
+        "type_id": 1,
+        "type_name": "กิจกรรมเพื่อเสริมสร้างสมรรถนะทั่วไป",
+        "activities": [
+          {
+            "id": 50070,
+            "title": "กิจกรรมสมมติ หมวด 7 ครั้งที่ 1",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50071,
+            "title": "กิจกรรมสมมติ หมวด 7 ครั้งที่ 2",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-02-15 08:45:00",
+            "checkout_at": "2025-02-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 113,
+            "seq": 13,
+            "category_id": 7,
+            "category_name": "ด้านส่งเสริมศิลปะและวัฒนธรรม",
+            "aspect_name": "ด้านส่งเสริมศิลปะและวัฒนธรรม",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 6,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 3
+            },
+            "count": 2,
+            "total_hours": 6.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 50070,
+                "title": "กิจกรรมสมมติ หมวด 7 ครั้งที่ 1",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50071,
+                "title": "กิจกรรมสมมติ หมวด 7 ครั้งที่ 2",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-02-15 08:45:00",
+                "checkout_at": "2025-02-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 6,
+        "category_name": "ด้านการบำเพ็ญประโยชน์หรือการรักษาสิ่งแวดล้อม",
+        "category_description": null,
+        "type_id": 1,
+        "type_name": "กิจกรรมเพื่อเสริมสร้างสมรรถนะทั่วไป",
+        "activities": [
+          {
+            "id": 50060,
+            "title": "กิจกรรมสมมติ หมวด 6 ครั้งที่ 1",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-01-15 08:45:00",
+            "checkout_at": "2025-01-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          },
+          {
+            "id": 50061,
+            "title": "กิจกรรมสมมติ หมวด 6 ครั้งที่ 2",
+            "duration_hours": 3.0,
+            "attendance_hours": 3.0,
+            "checkin_at": "2025-02-15 08:45:00",
+            "checkout_at": "2025-02-15 12:00:00",
+            "joined_year": "66",
+            "occurrence_index": 1,
+            "occurrence_total": 1
+          }
+        ],
+        "frame_items": [
+          {
+            "id": 114,
+            "seq": 14,
+            "category_id": 6,
+            "category_name": "ด้านการบำเพ็ญประโยชน์หรือการรักษาสิ่งแวดล้อม",
+            "aspect_name": "ด้านการบำเพ็ญประโยชน์หรือการรักษาสิ่งแวดล้อม",
+            "detail": null,
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 6,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 3
+            },
+            "count": 2,
+            "total_hours": 6.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 50060,
+                "title": "กิจกรรมสมมติ หมวด 6 ครั้งที่ 1",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-01-15 08:45:00",
+                "checkout_at": "2025-01-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 50061,
+                "title": "กิจกรรมสมมติ หมวด 6 ครั้งที่ 2",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-02-15 08:45:00",
+                "checkout_at": "2025-02-15 12:00:00",
+                "joined_year": "66",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ],
+            "planned_activities": []
+          }
+        ]
+      }
+    ]
+  }
+}

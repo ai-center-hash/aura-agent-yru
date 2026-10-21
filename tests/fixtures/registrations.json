@@ -1,0 +1,209 @@
+{
+  "data": [
+    {
+      "id": 1612,
+      "activity_id": 62,
+      "schedule_id": 101,
+      "user_id": 119231,
+      "user_code": "406510024",
+      "user_name": "นายสมชาย ใจดี",
+      "user_email": "somchai.j@yru.ac.th",
+      "user": {
+        "id": 119231,
+        "username": "406510024",
+        "name": "นายสมชาย ใจดี"
+      },
+      "activity": {
+        "id": 62,
+        "title": "จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย ครั้งที่ 2"
+      },
+      "schedule": {
+        "id": 101,
+        "registration_start_date": "2026-10-01T08:30:00+07:00",
+        "registration_end_date": "2026-11-01T16:30:00+07:00",
+        "activity_start_date": "2026-11-05T09:00:00+07:00",
+        "activity_end_date": "2026-11-05T16:00:00+07:00",
+        "duration_minutes": 360,
+        "status": "active"
+      },
+      "status": 1,
+      "remark": null,
+      "registered_at": "2026-10-18T10:15:20+07:00",
+      "checkin_at": null,
+      "checkout_at": null,
+      "attendance_minutes": null,
+      "checkin_method": null,
+      "ref_code": "REG-20261018-0041",
+      "note": null,
+      "meta": null,
+      "created_at": "2026-10-18T10:15:20+07:00",
+      "updated_at": "2026-10-18T10:15:20+07:00"
+    },
+    {
+      "id": 1600,
+      "activity_id": 61,
+      "schedule_id": 90,
+      "user_id": 119231,
+      "user_code": "406510024",
+      "user_name": "นายสมชาย ใจดี",
+      "user": {
+        "id": 119231,
+        "username": "406510024",
+        "name": "นายสมชาย ใจดี"
+      },
+      "activity": {
+        "id": 61,
+        "title": "อบรมปฐมพยาบาลเบื้องต้น"
+      },
+      "schedule": {
+        "id": 90,
+        "activity_start_date": "2026-10-15T09:00:00+07:00",
+        "activity_end_date": "2026-10-15T12:00:00+07:00",
+        "duration_minutes": 180,
+        "status": "closed"
+      },
+      "status": 4,
+      "registered_at": "2026-10-10T14:02:00+07:00",
+      "checkin_at": "2026-10-15T09:02:11+07:00",
+      "checkout_at": null,
+      "attendance_minutes": null,
+      "checkin_method": "qr_scan",
+      "ref_code": "REG-20261010-0033",
+      "created_at": "2026-10-10T14:02:00+07:00",
+      "updated_at": "2026-10-15T09:02:11+07:00"
+    },
+    {
+      "id": 1588,
+      "activity_id": 71,
+      "schedule_id": 95,
+      "user_id": 119231,
+      "user_code": "406510024",
+      "user_name": "นายสมชาย ใจดี",
+      "user": {
+        "id": 119231,
+        "username": "406510024",
+        "name": "นายสมชาย ใจดี"
+      },
+      "activity": {
+        "id": 71,
+        "title": "อบรมการใช้งานฐานข้อมูลเพื่องานวิจัย"
+      },
+      "schedule": {
+        "id": 95,
+        "activity_start_date": "2026-02-14T08:30:00+07:00",
+        "activity_end_date": "2026-02-15T16:30:00+07:00",
+        "duration_minutes": 690,
+        "status": "closed"
+      },
+      "status": 5,
+      "registered_at": "2026-02-01T09:40:00+07:00",
+      "checkin_at": "2026-02-14T08:40:00+07:00",
+      "checkout_at": "2026-02-15T16:10:00+07:00",
+      "attendance_minutes": 690,
+      "checkin_method": "qr_scan",
+      "ref_code": "REG-20260201-0008",
+      "created_at": "2026-02-01T09:40:00+07:00",
+      "updated_at": "2026-02-15T16:10:00+07:00"
+    },
+    {
+      "id": 1550,
+      "activity_id": 70,
+      "schedule_id": 92,
+      "user_id": 119231,
+      "user_code": "406510024",
+      "user_name": "นายสมชาย ใจดี",
+      "user": {
+        "id": 119231,
+        "username": "406510024",
+        "name": "นายสมชาย ใจดี"
+      },
+      "activity": {
+        "id": 70,
+        "title": "อบรมเขียนโปรแกรมด้วย Python เบื้องต้น"
+      },
+      "schedule": {
+        "id": 92,
+        "activity_start_date": "2026-01-10T08:30:00+07:00",
+        "activity_end_date": "2026-01-10T16:30:00+07:00",
+        "duration_minutes": 360,
+        "status": "closed"
+      },
+      "status": 5,
+      "registered_at": "2026-01-05T11:20:00+07:00",
+      "checkin_at": "2026-01-10T08:45:00+07:00",
+      "checkout_at": "2026-01-10T16:00:00+07:00",
+      "attendance_minutes": 360,
+      "checkin_method": "staff",
+      "ref_code": "REG-20260105-0019",
+      "created_at": "2026-01-05T11:20:00+07:00",
+      "updated_at": "2026-01-10T16:00:00+07:00"
+    },
+    {
+      "id": 1490,
+      "activity_id": 52,
+      "schedule_id": 85,
+      "user_id": 119231,
+      "user_code": "406510024",
+      "user_name": "นายสมชาย ใจดี",
+      "user": {
+        "id": 119231,
+        "username": "406510024",
+        "name": "นายสมชาย ใจดี"
+      },
+      "activity": {
+        "id": 52,
+        "title": "อบรมภาษาอังกฤษเพื่อการสื่อสาร"
+      },
+      "schedule": {
+        "id": 85,
+        "activity_start_date": "2025-07-20T09:00:00+07:00",
+        "activity_end_date": "2025-07-20T16:00:00+07:00",
+        "duration_minutes": 360,
+        "status": "closed"
+      },
+      "status": 6,
+      "remark": "ติดเรียนชดเชย",
+      "registered_at": "2025-07-10T08:05:00+07:00",
+      "checkin_at": null,
+      "checkout_at": null,
+      "attendance_minutes": null,
+      "checkin_method": null,
+      "ref_code": "REG-20250710-0002",
+      "created_at": "2025-07-10T08:05:00+07:00",
+      "updated_at": "2025-07-18T10:00:00+07:00"
+    },
+    {
+      "id": 1502,
+      "activity_id": 45,
+      "schedule_id": 80,
+      "user_id": 119231,
+      "user_code": "406510024",
+      "user_name": "นายสมชาย ใจดี",
+      "user": {
+        "id": 119231,
+        "username": "406510024",
+        "name": "นายสมชาย ใจดี"
+      },
+      "activity": {
+        "id": 45,
+        "title": "กิจกรรมปฐมนิเทศนักศึกษาใหม่ ประจำปีการศึกษา 2568"
+      },
+      "schedule": {
+        "id": 80,
+        "activity_start_date": "2025-06-20T09:00:00+07:00",
+        "activity_end_date": "2025-06-20T12:00:00+07:00",
+        "duration_minutes": 180,
+        "status": "closed"
+      },
+      "status": 5,
+      "registered_at": "2025-06-05T10:15:20+07:00",
+      "checkin_at": "2025-06-20T08:50:12+07:00",
+      "checkout_at": "2025-06-20T12:05:40+07:00",
+      "attendance_minutes": 180,
+      "checkin_method": "qr_scan",
+      "ref_code": "REG-20250605-0012",
+      "created_at": "2025-06-05T10:15:20+07:00",
+      "updated_at": "2025-06-20T12:05:40+07:00"
+    }
+  ]
+}

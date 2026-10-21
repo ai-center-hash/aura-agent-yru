@@ -1,0 +1,75 @@
+{
+  "data": [
+    {
+      "id": 1550,
+      "activity_id": 70,
+      "schedule_id": 92,
+      "user_id": 220114,
+      "user_code": "406610088",
+      "user_name": "นางสาวมาลี รักเรียน",
+      "user": {
+        "id": 220114,
+        "username": "406610088",
+        "name": "นางสาวมาลี รักเรียน"
+      },
+      "activity": {
+        "id": 70,
+        "title": "อบรมเขียนโปรแกรมด้วย Python เบื้องต้น"
+      },
+      "schedule": {
+        "id": 92,
+        "activity_start_date": "2026-01-10T08:30:00+07:00",
+        "activity_end_date": "2026-01-10T16:30:00+07:00",
+        "duration_minutes": 360,
+        "status": "closed"
+      },
+      "status": 5,
+      "registered_at": "2026-01-05T11:20:00+07:00",
+      "checkin_at": "2026-01-10T08:45:00+07:00",
+      "checkout_at": "2026-01-10T16:00:00+07:00",
+      "attendance_minutes": 360,
+      "checkin_method": "staff",
+      "ref_code": "REG-20260105-0019",
+      "created_at": "2026-01-05T11:20:00+07:00",
+      "updated_at": "2026-01-10T16:00:00+07:00"
+    },
+    {
+      "id": 1612,
+      "activity_id": 62,
+      "schedule_id": 101,
+      "user_id": 220114,
+      "user_code": "406610088",
+      "user_name": "นางสาวมาลี รักเรียน",
+      "user": {
+        "id": 220114,
+        "username": "406610088",
+        "name": "นางสาวมาลี รักเรียน"
+      },
+      "activity": {
+        "id": 62,
+        "title": "จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย ครั้งที่ 2"
+      },
+      "schedule": {
+        "id": 101,
+        "registration_start_date": "2026-10-01T08:30:00+07:00",
+        "registration_end_date": "2026-11-01T16:30:00+07:00",
+        "activity_start_date": "2026-11-05T09:00:00+07:00",
+        "activity_end_date": "2026-11-05T16:00:00+07:00",
+        "duration_minutes": 360,
+        "status": "active"
+      },
+      "status": 1,
+      "remark": null,
+      "registered_at": "2026-10-18T10:15:20+07:00",
+      "checkin_at": null,
+      "checkout_at": null,
+      "attendance_minutes": null,
+      "checkin_method": null,
+      "ref_code": "REG-20261018-0041",
+      "note": null,
+      "meta": null,
+      "created_at": "2026-10-18T10:15:20+07:00",
+      "updated_at": "2026-10-18T10:15:20+07:00"
+    }
+  ]
+}

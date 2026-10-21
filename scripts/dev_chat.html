@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AURA · หน้าแชททดสอบ</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --border: #e2e5ea;
+        --text: #16181d;
+        --muted: #6b7280;
+        --bot: #f1f3f6;
+        --me: #1f6feb;
+        --me-text: #ffffff;
+        --accent: #1f6feb;
+        --error: #b42318;
+        --ok: #1a7f37;
+        --radius: 14px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #15171c;
+          --panel: #1c1f26;
+          --border: #2c313b;
+          --text: #e8eaee;
+          --muted: #9aa3b2;
+          --bot: #242933;
+          --me: #2f6feb;
+          --me-text: #ffffff;
+          --accent: #6aa5ff;
+          --error: #ff9a8f;
+          --ok: #56d364;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", system-ui, sans-serif;
+        line-height: 1.6;
+      }
+      .wrap {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        gap: 12px;
+      }
+      header h1 { font-size: 1.15rem; margin: 0 0 4px; }
+      header p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px;
+      }
+      .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      label { font-size: 0.85rem; color: var(--muted); }
+      select, input, button, textarea, .button {
+        font: inherit;
+        color: var(--text);
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
+      button, .button { cursor: pointer; text-decoration: none; display: inline-block; }
+      button.primary, .button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+      button:disabled { opacity: 0.55; cursor: default; }
+      .link { background: none; border: none; color: var(--accent); padding: 0; text-decoration: underline; }
+      #loginRow { display: none; width: 100%; align-items: center; gap: 10px; flex-wrap: wrap; }
+      #loginRow.show { display: flex; }
+      #chat {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        min-height: 320px;
+      }
+      .msg { display: flex; }
+      .msg .bubble {
+        padding: 10px 13px;
+        border-radius: var(--radius);
+        max-width: min(85%, 620px);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+      .msg.me { justify-content: flex-end; }
+      .msg.me .bubble { background: var(--me); color: var(--me-text); border-bottom-right-radius: 4px; }
+      .msg.bot .bubble { background: var(--bot); border-bottom-left-radius: 4px; }
+      .status { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+      .error { color: var(--error); font-size: 0.9rem; }
+      .success { color: var(--ok); font-size: 0.9rem; }
+      .meta { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+      .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .chips button { font-size: 0.8rem; padding: 5px 9px; border-radius: 999px; }
+      form { display: flex; gap: 8px; }
+      textarea { flex: 1; resize: none; min-height: 46px; max-height: 140px; }
+      .hint { color: var(--muted); font-size: 0.75rem; }
+      #who { font-size: 0.85rem; }
+      #who .name { font-weight: 600; }
+      #who .tag {
+        display: inline-block;
+        font-size: 0.72rem;
+        padding: 1px 7px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        margin-left: 6px;
+      }
+      #who .facts { color: var(--muted); margin-top: 2px; }
+      .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); margin-right: 5px; }
+      .dot.ok { background: var(--ok); }
+      .dot.bad { background: var(--error); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>AURA · หน้าแชททดสอบ</h1>
+        <p id="info"><span class="dot"></span>กำลังโหลดข้อมูลเซิร์ฟเวอร์…</p>
+      </header>
+
+      <div class="panel controls">
+        <label for="mode">ข้อมูลที่ใช้</label>
+        <select id="mode">
+          <option value="persona">persona จำลอง (ไม่ต้อง login)</option>
+          <option value="passport">บัญชี YRU Passport ของฉัน (ข้อมูลจริง)</option>
+        </select>
+        <select id="persona"></select>
+        <button id="reset" type="button">เริ่มแชทใหม่</button>
+        <div id="loginRow"></div>
+      </div>
+
+      <div class="panel" id="who"></div>
+
+      <div class="panel chips" id="chips"></div>
+
+      <div class="panel" id="chat">
+        <div class="msg bot">
+          <div class="bubble">สวัสดีครับ ผม AURA ถามเรื่องกิจกรรมนักศึกษามาได้เลย เช่น "ผมยังขาดหมวดไหน" หรือ "มีกิจกรรมอะไรเปิดรับสมัครอยู่"</div>
+        </div>
+      </div>
+
+      <form id="form" class="panel">
+        <textarea id="input" placeholder="พิมพ์คำถาม… (Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่)" autofocus></textarea>
+        <button class="primary" id="send" type="submit">ส่ง</button>
+      </form>
+      <p class="hint" id="hint"></p>
+    </div>
+
+    <script>
+      const el = (id) => document.getElementById(id);
+      const chat = el("chat");
+      const modeSelect = el("mode");
+      const personaSelect = el("persona");
+
+      let info = null;
+      let me = { logged_in: false };
+      let personaCards = [];
+      let threadId = newThreadId();
+      let busy = false;
+
+      const LOGIN_RESULTS = {
+        ok: ["success", "เข้าสู่ระบบด้วย YRU Passport สำเร็จ"],
+        cancelled: ["status", "ยกเลิกการเข้าสู่ระบบแล้ว"],
+        not_student: ["error", "บัญชีนี้ไม่ใช่บัญชีนักศึกษา AURA ให้บริการเฉพาะนักศึกษาครับ"],
+        error: ["error", "เข้าสู่ระบบไม่สำเร็จ ลองกดเข้าสู่ระบบใหม่อีกครั้ง"],
+      };
+
+      function newThreadId() {
+        return (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text == null ? "" : String(text);
+        return div.innerHTML;
+      }
+
+      function addMessage(role, text) {
+        const row = document.createElement("div");
+        row.className = `msg ${role}`;
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = text;
+        row.appendChild(bubble);
+        chat.appendChild(row);
+        chat.scrollTop = chat.scrollHeight;
+        return bubble;
+      }
+
+      function addNote(className, text) {
+        const note = document.createElement("div");
+        note.className = className;
+        note.textContent = text;
+        chat.appendChild(note);
+        chat.scrollTop = chat.scrollHeight;
+        return note;
+      }
+
+      // ---- แสดงสถานะ ----
+
+      function render() {
+        const passport = modeSelect.value === "passport";
+        personaSelect.style.display = passport ? "none" : "";
+        renderLoginRow(passport);
+        renderWho(passport);
+        renderInfo(passport);
+      }
+
+      function renderInfo(passport) {
+        if (!info) return;
+        const day = passport ? `${info.today} (วันจริง)` : `${info.fixture_date} (วันของข้อมูลจำลอง)`;
+        el("info").innerHTML = `<span class="dot ok"></span>โมเดล ${escapeHtml(info.model)} · วันอ้างอิง ${day}`;
+      }
+
+      function renderLoginRow(passport) {
+        const row = el("loginRow");
+        row.classList.toggle("show", passport);
+        if (!passport) return;
+
+        if (info && !info.login_available) {
+          row.innerHTML =
+            '<span class="error">login ยังไม่พร้อม: ตั้ง PASSPORT_CLIENT_ID / PASSPORT_CLIENT_SECRET ใน .env แล้วเปิดเซิร์ฟเวอร์ใหม่</span>';
+        } else if (me.logged_in) {
+          row.innerHTML =
+            `<span>เข้าสู่ระบบเป็น <strong>${escapeHtml(me.name)}</strong></span>` +
+            '<button type="button" class="link" id="logout">ออกจากระบบ</button>';
+          el("logout").onclick = logout;
+        } else {
+          row.innerHTML = '<a class="button primary" href="/auth/login">เข้าสู่ระบบด้วย YRU Passport</a>';
+        }
+      }
+
+      function renderWho(passport) {
+        const box = el("who");
+        if (passport) {
+          if (!me.logged_in) {
+            box.innerHTML =
+              '<span class="name">ยังไม่ได้เข้าสู่ระบบ</span>' +
+              '<div class="facts">กด "เข้าสู่ระบบด้วย YRU Passport" แล้วจะคุยกับข้อมูลกิจกรรมจริงของบัญชีนั้น</div>';
+            return;
+          }
+          box.innerHTML =
+            `<span class="name">กำลังคุยในฐานะ ${escapeHtml(me.name)}</span>` +
+            '<span class="tag">ข้อมูลจริงจาก Activity API</span>' +
+            `<div class="facts">${escapeHtml(me.faculty || "")} · ตัวตนมาจากการ login กับ YRU Passport ไม่ใช่จากที่พิมพ์ในแชท</div>`;
+          return;
+        }
+
+        const card = personaCards.find((p) => p.name === personaSelect.value);
+        if (!card) {
+          box.textContent = "";
+          return;
+        }
+        const gaps = card.gaps.length ? card.gaps.join(" · ") : "ไม่มี (ครบตามเกณฑ์แล้ว)";
+        box.innerHTML =
+          `<span class="name">กำลังคุยในฐานะ ${escapeHtml(card.student_name)}</span>` +
+          '<span class="tag">นักศึกษาสมมติ ไม่ใช่ข้อมูลจริง</span>' +
+          `<div class="facts">รหัส ${escapeHtml(card.student_id)} · ${escapeHtml(card.faculty)} · สาขา${escapeHtml(card.major)} ·` +
+          ` นักศึกษา${escapeHtml(card.status)}<br />ทำไปแล้ว ${escapeHtml(card.progress)} · ลงทะเบียนไว้ ${card.registrations} รายการ ·` +
+          ` หมวดที่ยังขาด: ${escapeHtml(gaps)}</div>`;
+      }
+
+      // ---- โหลดข้อมูล ----
+
+      async function loadInfo() {
+        try {
+          info = await (await fetch("/api/info")).json();
+          personaCards = info.personas;
+          personaSelect.innerHTML = info.personas
+            .map((p) => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.student_name)} — ${escapeHtml(p.label)}</option>`)
+            .join("");
+          el("chips").innerHTML = "";
+          info.suggestions.forEach((question) => {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.textContent = question;
+            chip.onclick = () => {
+              el("input").value = question;
+              el("form").requestSubmit();
+            };
+            el("chips").appendChild(chip);
+          });
+          el("hint").textContent =
+            "persona จำลองใช้ข้อมูลใน tests/evals/personas/ · บัญชี YRU Passport ใช้ข้อมูลจริงจาก " + info.act_api_base_url;
+        } catch (error) {
+          el("info").innerHTML = `<span class="dot bad"></span>ต่อเซิร์ฟเวอร์ไม่ได้: ${escapeHtml(error)}`;
+        }
+      }
+
+      async function loadMe() {
+        try {
+          me = await (await fetch("/api/me")).json();
+        } catch (_) {
+          me = { logged_in: false };
+        }
+      }
+
+      async function logout() {
+        await fetch("/auth/logout", { method: "POST" });
+        me = { logged_in: false };
+        threadId = newThreadId();
+        render();
+        addNote("status", "ออกจากระบบแล้ว");
+      }
+
+      function readLoginResult() {
+        const params = new URLSearchParams(location.search);
+        if (params.get("mode") === "passport") modeSelect.value = "passport";
+        const result = LOGIN_RESULTS[params.get("login")];
+        if (result) addNote(result[0], result[1]);
+        if (params.toString()) history.replaceState(null, "", "/");
+      }
+
+      // ---- เหตุการณ์ ----
+
+      modeSelect.onchange = () => {
+        threadId = newThreadId();
+        render();
+      };
+
+      personaSelect.onchange = () => {
+        threadId = newThreadId();
+        render();
+        const card = personaCards.find((p) => p.name === personaSelect.value);
+        addNote("status", `เปลี่ยนเป็น ${card ? card.student_name : personaSelect.value} แล้ว เริ่มแชทใหม่`);
+      };
+
+      el("reset").onclick = () => {
+        threadId = newThreadId();
+        chat.innerHTML = "";
+        addNote("status", "เริ่มแชทใหม่แล้ว");
+      };
+
+      el("input").addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          el("form").requestSubmit();
+        }
+      });
+
+      el("form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (busy) return;
+        const message = el("input").value.trim();
+        if (!message) return;
+
+        const mode = modeSelect.value;
+        if (mode === "passport" && !me.logged_in) {
+          addNote("error", 'เข้าสู่ระบบด้วย YRU Passport ก่อนครับ (ปุ่มด้านบน)');
+          return;
+        }
+
+        el("input").value = "";
+        addMessage("me", message);
+        setBusy(true);
+
+        const statusLine = addNote("status", "กำลังคิด…");
+        let bubble = null;
+        let answer = "";
+
+        // ถ้าไม่มีอะไรไหลมาเลยใน 45 วินาที ให้บอกว่าน่าจะติดที่อะไร ดีกว่าค้างเงียบๆ
+        const stallTimer = setTimeout(() => {
+          if (!answer) {
+            statusLine.textContent =
+              "ยังไม่มีคำตอบเกิน 45 วินาที — เช็คว่า SSH tunnel ไป Ollama ยังเปิดอยู่ไหม" +
+              " หรือโมเดลอาจกำลังโหลดใหม่ (ครั้งแรกใช้เวลา ~25 วินาที)";
+          }
+        }, 45000);
+
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ thread_id: threadId, message, mode, persona: personaSelect.value }),
+          });
+
+          if (response.status === 401) {
+            statusLine.remove();
+            me = { logged_in: false };
+            render();
+            addNote("error", "หมดเวลาเข้าสู่ระบบ กรุณาเข้าสู่ระบบด้วย YRU Passport ใหม่");
+            return;
+          }
+          if (!response.ok) {
+            statusLine.remove();
+            addNote("error", `เซิร์ฟเวอร์ตอบ ${response.status}: ${await response.text()}`);
+            return;
+          }
+
+          for await (const sse of readSSE(response)) {
+            if (sse.name === "status") {
+              statusLine.textContent = sse.data.text;
+            } else if (sse.name === "token") {
+              if (!bubble) {
+                statusLine.remove();
+                bubble = addMessage("bot", "");
+              }
+              answer += sse.data.text;
+              bubble.textContent = answer;
+              chat.scrollTop = chat.scrollHeight;
+            } else if (sse.name === "done") {
+              statusLine.remove();
+              if (!bubble) addMessage("bot", "(ไม่มีคำตอบ)");
+              const tools = sse.data.tools_used.length
+                ? `เครื่องมือ: ${sse.data.tools_used.join(", ")}`
+                : "ไม่เรียกเครื่องมือ";
+              addNote("meta", `${tools} · ${(sse.data.latency_ms / 1000).toFixed(1)} วินาที`);
+            } else if (sse.name === "error") {
+              statusLine.remove();
+              addNote("error", `[${sse.data.code}] ${sse.data.text}`);
+              if (sse.data.code === "TOKEN_EXPIRED") {
+                me = { logged_in: false };
+                render();
+              }
+            }
+          }
+        } catch (error) {
+          statusLine.remove();
+          addNote("error", `ขัดข้อง: ${error}`);
+        } finally {
+          clearTimeout(stallTimer);
+          setBusy(false);
+        }
+      });
+
+      function setBusy(value) {
+        busy = value;
+        el("send").disabled = value;
+        el("send").textContent = value ? "กำลังตอบ…" : "ส่ง";
+      }
+
+      // sse-starlette คั่น event ด้วย CRLF ไม่ใช่ LF จึงต้องรับทั้งสองแบบ
+      const EVENT_SEPARATOR = /\r?\n\r?\n/;
+
+      async function* readSSE(response) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let match;
+          while ((match = EVENT_SEPARATOR.exec(buffer)) !== null) {
+            const block = buffer.slice(0, match.index);
+            buffer = buffer.slice(match.index + match[0].length);
+            const parsed = parseBlock(block);
+            if (parsed) yield parsed;
+          }
+        }
+
+        const last = parseBlock(buffer);
+        if (last) yield last;
+      }
+
+      function parseBlock(block) {
+        let name = "message";
+        const dataLines = [];
+        for (const line of block.split(/\r?\n/)) {
+          if (line.startsWith("event:")) name = line.slice(6).trim();
+          else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
+        }
+        if (!dataLines.length) return null;
+        try {
+          return { name, data: JSON.parse(dataLines.join("\n")) };
+        } catch (error) {
+          console.warn("parse SSE ไม่ได้", block, error);
+          return null;
+        }
+      }
+
+      (async () => {
+        readLoginResult();
+        await Promise.all([loadInfo(), loadMe()]);
+        render();
+      })();
+    </script>
+  </body>
+</html>

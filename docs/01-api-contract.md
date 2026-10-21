@@ -1,0 +1,68 @@
+# 01 · API Contract (Backend ↔ AURA-AGENT)
+
+เอกสารนี้ส่งให้ทีม backend ได้เลย Base URL: `http://10.20.41.54:8100` (เครื่อง yru-ai · port 8000 ของเครื่องนี้เป็นของ backend)
+
+ลองยิงได้จากหน้า Swagger ที่ `http://10.20.41.54:8100/docs` · `SERVICE_KEY` ขอจากผู้ดูแล AURA ทางช่องทางส่วนตัว
+
+## Headers ที่ต้องส่งทุก request
+
+| Header | ค่า | หมายเหตุ |
+|---|---|---|
+| `Authorization` | `Bearer <access token จาก YRU Passport>` | ส่งต่อจาก frontend โดยไม่แก้ไข · AURA ถาม Passport ว่าเป็นใคร และ**ไม่ส่ง token นี้ต่อให้ระบบอื่น** |
+| `X-Service-Key` | key ที่ตกลงกันใน `.env` | AURA-AGENT จะตอบเฉพาะ request ที่มี key นี้ |
+
+## `POST /v1/chat`: ถามคำถาม (SSE stream)
+
+**Request**
+```json
+{
+  "thread_id": "c1f0a7e2-...",
+  "message": "ผมยังขาดกิจกรรมหมวดไหน"
+}
+```
+- `thread_id`: frontend สร้างเป็น UUID ต่อห้องแชท ส่งค่าเดิมเพื่อคุยต่อในบทสนทนาเดิม
+- `message`: ยาวได้ 1–1000 ตัวอักษร
+
+**Response:** `Content-Type: text/event-stream`
+
+| event | data | เมื่อไร |
+|---|---|---|
+| `status` | `{"text": "กำลังค้นหากิจกรรม..."}` | ตอนเริ่มเรียก tool (เอาไว้แสดงสถานะ) |
+| `token` | `{"text": "คุณยังขาด"}` | ข้อความคำตอบทีละชิ้น ให้ต่อกันตามลำดับ |
+| `done` | `{"thread_id": "...", "tools_used": ["get_my_progress"], "latency_ms": 4120}` | จบคำตอบ |
+| `error` | `{"code": "TOKEN_EXPIRED", "text": "กรุณาเข้าสู่ระบบใหม่"}` | มีปัญหา (ส่งแทน `done`) |
+
+**ตัวอย่าง stream**
+```
+event: status
+data: {"text": "กำลังตรวจสอบความคืบหน้า..."}
+
+event: token
+data: {"text": "คุณยังขาดอีก 2 หมวด"}
+
+event: done
+data: {"thread_id": "c1f0a7e2-...", "tools_used": ["get_my_progress"], "latency_ms": 4120}
+```
+
+## Error codes
+
+| HTTP / code | สาเหตุ | สิ่งที่ frontend ควรทำ |
+|---|---|---|
+| `401` (HTTP) | `X-Service-Key` ผิดหรือไม่ได้ส่ง | เป็นปัญหาฝั่ง backend |
+| `422` (HTTP) | body ไม่ถูกรูปแบบ | ตรวจ request |
+| `TOKEN_EXPIRED` | Passport (หรือ Activity API) ตอบ 401 | ให้ผู้ใช้ login ใหม่ |
+| `NOT_STUDENT` | token ใช้ได้ แต่ไม่ใช่บัญชีนักศึกษา (เช่น บุคลากร) | แสดงว่า AURA ใช้ได้เฉพาะนักศึกษา |
+| `UPSTREAM_UNAVAILABLE` | เรียก Activity API ไม่ได้ หรือ timeout | แสดงว่า "ระบบกิจกรรมไม่พร้อมใช้งานชั่วคราว" |
+| `LLM_UNAVAILABLE` | เรียก Ollama ไม่ได้ | แสดงว่า "ผู้ช่วยไม่พร้อมใช้งานชั่วคราว" |
+| `INTERNAL` | error อื่นๆ | แสดงข้อความทั่วไป |
+
+`TOKEN_EXPIRED` และอื่นๆ ในตารางนี้จะส่งมาเป็น `event: error` ใน stream (HTTP status ยังเป็น 200)
+
+นักศึกษาที่ระบบกิจกรรมยังไม่มีกรอบกิจกรรมให้ **ไม่ได้ error** — บอทจะคุยต่อและอธิบายเองว่ายังดูความคืบหน้าไม่ได้
+
+## Endpoint อื่น
+
+| Method | Path | หน้าที่ |
+|---|---|---|
+| `GET` | `/v1/health` | `{"status":"ok","ollama":"ok","activity_api":"ok"}` (ไม่ต้องใช้ JWT) |
+| `DELETE` | `/v1/chat/{thread_id}` | ลบประวัติแชทของ thread นี้ (ลบได้เฉพาะของตัวเอง) |

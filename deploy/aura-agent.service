@@ -1,0 +1,28 @@
+# systemd unit ของ AURA-AGENT บนเครื่อง yru-ai · ติดตั้งด้วย deploy/install.sh
+# port 8000 ของเครื่องนี้เป็นของ backend (Laravel) จึงใช้ 8100
+
+[Unit]
+Description=AURA-AGENT chatbot service (FastAPI)
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aura
+Group=aura
+WorkingDirectory=/opt/aura-agent
+EnvironmentFile=/opt/aura-agent/.env
+ExecStart=/usr/local/bin/uv run --frozen --no-dev uvicorn aura_agent.api.main:app --host 0.0.0.0 --port 8100 --no-access-log
+Restart=always
+RestartSec=5
+Environment=UV_CACHE_DIR=/opt/aura-agent/.uv-cache
+Environment=UV_PYTHON_INSTALL_DIR=/opt/aura-agent/.uv-python
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/aura-agent
+
+[Install]
+WantedBy=multi-user.target

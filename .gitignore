@@ -1,0 +1,28 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets — never commit
+.env
+*.jwt
+
+# Runtime data (chat history). Root only: src/aura_agent/data/ is source code.
+/data/
+*.sqlite
+*.sqlite-*
+
+# Eval reports may contain model output about personas; keep locally
+tests/evals/reports/
