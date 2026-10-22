@@ -337,3 +337,13 @@ async def test_teacher_lists_advisees_through_graph(advisor_client, frozen_today
     assert tool_message.content.startswith("[นักศึกษาในที่ปรึกษา]")
     bound = set(fake.calls[0]["tools"])
     assert bound == {"search_activities", "list_my_advisees", "get_advisee_progress"}
+
+
+def test_advisee_list_shows_a_large_group_in_full():
+    """อาจารย์ที่ดูแลหลายรุ่นต้องได้รายชื่อครบเมื่อขอทั้งหมด"""
+    rows = [user_row(f"4066{index:05d}", 3, 30) for index in range(120)]
+
+    text = format_advisees([Advisee.model_validate(row) for row in rows])
+
+    assert "(แสดง" not in text
+    assert len(text.splitlines()) == 1 + 120

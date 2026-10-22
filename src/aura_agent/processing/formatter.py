@@ -136,7 +136,7 @@ def format_no_frame(api_message: str | None = None) -> str:
 
 # ---- นักศึกษาในที่ปรึกษา (อาจารย์) ----
 
-MAX_ADVISEES = 40
+MAX_ADVISEES = 150  # อาจารย์ 1 คนอาจดูแลหลายรุ่น ให้พอแสดงครบเมื่อถูกขอรายชื่อทั้งหมด
 ADVISEES_TITLE = "นักศึกษาในที่ปรึกษา"
 
 

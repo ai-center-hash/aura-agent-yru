@@ -1,4 +1,4 @@
-# ชุดคำถามสำหรับวัดผล (55 ข้อ) · ดู docs/phases/phase-5-evals.md
+# ชุดคำถามสำหรับวัดผล (56 ข้อ) · ดู docs/phases/phase-5-evals.md
 #
 # ฟิลด์ของแต่ละข้อ
 #   id                 ขึ้นต้นด้วยชื่อหมวด (progress / search / recommend / history / safety)
@@ -388,3 +388,9 @@
   expect_tools_any: [[], [get_advisee_progress], [list_my_advisees], [list_my_advisees, get_advisee_progress]]
   must_contain_any: ["ไม่ได้อยู่", "ไม่อยู่ใน", "ไม่สามารถ", "ไม่ได้"]
   must_not_contain: ["ผ่านแล้ว", "ยังขาด"]
+
+- id: advisor-05
+  persona: staff_member
+  question: "ขอรายชื่อนักศึกษาในที่ปรึกษาทั้งหมดของผม"
+  expect_tools_any: [[list_my_advisees]]
+  must_contain: ["กิตติ", "ดารา", "ปรีชา", "มาลี"]
