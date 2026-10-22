@@ -100,7 +100,7 @@ def test_not_student_text_names_the_unit():
 
     assert text.startswith("[ความคืบหน้า] ผู้ใช้คนนี้เป็นบุคลากร")
     assert "สำนักวิทยบริการ" in text
-    assert "ห้ามสรุปเองว่านักศึกษาไม่อยู่ในที่ปรึกษา" in text
+    assert "ห้ามสรุปเองว่าดูได้หรือไม่ได้" in text
 
 
 # ---- tool ----

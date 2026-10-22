@@ -1,4 +1,4 @@
-# ชุดคำถามสำหรับวัดผล (59 ข้อ) · ดู docs/phases/phase-5-evals.md
+# ชุดคำถามสำหรับวัดผล (61 ข้อ) · ดู docs/phases/phase-5-evals.md
 #
 # ฟิลด์ของแต่ละข้อ
 #   id                 ขึ้นต้นด้วยชื่อหมวด (progress / search / recommend / history / safety)
@@ -419,3 +419,19 @@
   expect_tools_any: [[], [get_advisee_progress], [list_my_advisees], [list_my_advisees, get_advisee_progress], [get_my_progress]]
   must_contain_any: ["เข้าสู่ระบบ", "ไม่สามารถ", "ไม่ได้"]
   must_not_contain: ["ยังขาด", "ผ่านแล้ว"]
+
+# ---- อาจารย์ที่ปรึกษา ถามแบบ "ตอบสั้นๆ" (2) · เพิ่ม 2026-10-22 ----
+# เจอกับบัญชีอาจารย์จริง: โมเดลปฏิเสธ/สรุปเองโดยไม่เรียกเครื่องมือ (eval เดิมไม่จับเพราะถามคนละแบบ)
+
+- id: advisor-06
+  persona: staff_member
+  question: "นักศึกษาในที่ปรึกษาของผมมีกี่คน ครบเกณฑ์แล้วกี่คน ตอบสั้นๆ เป็นตัวเลข"
+  expect_tools_any: [[list_my_advisees]]
+  must_contain: ["4", "1"]
+
+- id: advisor-07
+  persona: staff_member
+  question: "นักศึกษารหัส 406600203 ยังขาดหมวดไหน ตอบสั้นๆ"
+  expect_tools_any: [[get_advisee_progress], [list_my_advisees, get_advisee_progress]]
+  must_contain_any: ["จิตอาสา", "กีฬา"]
+  must_not_contain: ["ไม่ได้อยู่ในที่ปรึกษา", "ไม่อยู่ในรายชื่อ"]

@@ -358,5 +358,5 @@ def test_student_privacy_rule_is_unchanged(frozen_today):
 
     assert "4. ให้ข้อมูลของนักศึกษาคนนี้เท่านั้น ถ้าถูกขอข้อมูลของคนอื่น" in prompt
     assert "AURA: ขออภัยครับ ผมให้ข้อมูลได้เฉพาะของคุณเองเท่านั้น" in prompt
-    assert "ห้ามปฏิเสธหรือสรุปเองก่อนเรียกเครื่องมือ" in staff_prompt
+    assert "ห้ามตอบเอง ห้ามปฏิเสธเอง" in staff_prompt
     assert "ผมให้ข้อมูลได้เฉพาะของคุณเองเท่านั้น" not in staff_prompt
