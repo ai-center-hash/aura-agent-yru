@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from aura_agent.data.schemas import Registration, Schedule, StudentSummary
+from aura_agent.data import NotAStudent
+from aura_agent.data.schemas import PassportUser, Registration, Schedule, StudentSummary
 
 PERSONA_DIR = Path(__file__).parent / "personas"
 
@@ -22,14 +23,29 @@ EVAL_JWT = "eval.fixture.jwt"  # ไม่ใช่ token จริง persona �
 
 @dataclass(frozen=True)
 class Persona:
+    """นักศึกษา (มี `summary_me.json`) หรือบุคลากร (มี `identity.json` แทน ไม่มีข้อมูลกิจกรรม)"""
+
     name: str
-    summary: StudentSummary
+    summary: StudentSummary | None
     schedules: list[Schedule]
     registrations: list[Registration]
+    identity: PassportUser | None = None
 
     @property
-    def user_id(self) -> int:
-        return self.summary.user.id
+    def is_student(self) -> bool:
+        return self.summary is not None
+
+    @property
+    def user_id(self) -> int | None:
+        return self.summary.user.id if self.summary is not None else None
+
+    @property
+    def subject(self) -> str:
+        """id ที่ใช้แยกประวัติแชท (เหมือน `ActClient.get_subject`)"""
+        if self.summary is not None:
+            return str(self.summary.user.id)
+        assert self.identity is not None
+        return f"passport:{self.identity.sub}"
 
 
 def load_persona(name: str, directory: Path | None = None) -> Persona:
@@ -37,8 +53,14 @@ def load_persona(name: str, directory: Path | None = None) -> Persona:
     if not base.is_dir():
         raise FileNotFoundError(f"ไม่พบ persona: {base}")
 
-    summary = StudentSummary.model_validate(_read(base / "summary_me.json")["data"])
     schedules = [Schedule.model_validate(row) for row in _read(base / "schedules.json")["data"]]
+    if (base / "identity.json").exists():
+        identity = PassportUser.model_validate(_read(base / "identity.json"))
+        return Persona(
+            name=name, summary=None, schedules=schedules, registrations=[], identity=identity
+        )
+
+    summary = StudentSummary.model_validate(_read(base / "summary_me.json")["data"])
     registrations = [
         Registration.model_validate(row) for row in _read(base / "registrations.json")["data"]
     ]
@@ -66,10 +88,13 @@ class PersonaClient:
         self.calls: list[tuple[str, dict]] = []
 
     async def get_subject(self, jwt: str) -> str:
-        return str(self.persona.user_id)
+        return self.persona.subject
 
     async def get_my_summary(self, jwt: str) -> StudentSummary:
         self.calls.append(("get_my_summary", {}))
+        if self.persona.summary is None:
+            # เหมือน ActClient โหมด passport เมื่อเจ้าของ token เป็นบุคลากร
+            raise NotAStudent("persona บุคลากร", identity=self.persona.identity)
         return self.persona.summary
 
     async def get_schedules(

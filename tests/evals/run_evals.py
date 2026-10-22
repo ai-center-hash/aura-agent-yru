@@ -101,7 +101,7 @@ async def run_case(graph, case: EvalCase, client: PersonaClient) -> CaseResult:
     try:
         stream = graph.astream(
             {"messages": [HumanMessage(case.question)], "tool_rounds": 0},
-            run_config(user_id=client.persona.user_id, thread_id=case.id, jwt=EVAL_JWT),
+            run_config(user_id=client.persona.subject, thread_id=case.id, jwt=EVAL_JWT),
             stream_mode=["updates", "messages"],
         )
         async for mode, payload in stream:

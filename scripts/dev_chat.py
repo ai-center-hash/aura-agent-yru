@@ -51,7 +51,7 @@ from aura_agent.agent import build_graph, state_serializer
 from aura_agent.api.schemas import MAX_MESSAGE_LEN
 from aura_agent.api.sse import chat_events
 from aura_agent.config import get_settings
-from aura_agent.data import ActApiError, ActClient, NotAStudent, build_act_client, set_act_client
+from aura_agent.data import ActApiError, ActClient, build_act_client, set_act_client
 from aura_agent.processing import analyze_gaps
 from tests.evals.personas import (
     EVAL_JWT,
@@ -76,6 +76,7 @@ PERSONA_LABELS = {
     "transfer_with_gaps": "นักศึกษาเทียบโอน · ยังขาด 2 หมวด",
     "completed_all": "นักศึกษาปกติ · ครบตามเกณฑ์แล้ว",
     "realistic_with_gaps": "โครงสร้างกรอบจริง 2566 · ยังขาด 5 หมวด",
+    "staff_member": "บุคลากร (อาจารย์) · ไม่มีข้อมูลกิจกรรมของตัวเอง",
 }
 
 SUGGESTIONS = [
@@ -117,6 +118,20 @@ def ordered_personas() -> list[str]:
 def persona_card(name: str) -> dict[str, Any]:
     """ข้อมูลว่า persona นี้คือนักศึกษาคนไหน เอาไปแสดงบนหน้าเว็บให้รู้ว่ากำลังคุยในฐานะใคร"""
     persona = load_persona(name)
+    if persona.summary is None:
+        identity = persona.identity
+        return {
+            "name": name,
+            "label": PERSONA_LABELS.get(name, name),
+            "student_name": identity.display if identity else "ไม่ทราบชื่อ",
+            "student_id": None,
+            "faculty": identity.org_unit_1_name if identity else None,
+            "major": None,
+            "status": "บุคลากร",
+            "progress": "ไม่มี (ไม่ใช่นักศึกษา)",
+            "gaps": [],
+            "registrations": 0,
+        }
     user = persona.summary.user
     report = analyze_gaps(persona.summary)
     return {
@@ -196,8 +211,6 @@ def create_app(*, oauth: OAuthClient | None) -> FastAPI:
             tokens = await oauth_client.exchange_code(code)
             token = str(tokens["access_token"])
             identity = await _real_client(app).get_identity(token)
-        except NotAStudent:
-            return _back("not_student")
         except (httpx.HTTPError, KeyError, ActApiError) as error_:
             logger.warning("passport login failed error=%s", type(error_).__name__)
             return _back("error")

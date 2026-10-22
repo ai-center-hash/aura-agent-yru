@@ -55,10 +55,19 @@ class PassportUnavailable(UpstreamUnavailable):
 
 
 class NotAStudent(ActApiError):
-    """token ใช้ได้ แต่เจ้าของไม่ใช่นักศึกษา (เช่น บุคลากร)"""
+    """token ใช้ได้ แต่เจ้าของไม่ใช่นักศึกษา (เช่น อาจารย์ เจ้าหน้าที่)
+
+    บุคลากรยังคุยกับบอทได้ (ค้นหารอบกิจกรรม) แต่ไม่มีความคืบหน้าหรือประวัติของตัวเอง
+    `ActClient.get_my_summary` จึงโยน error นี้แทนการเอา username ของบุคลากรไปค้นข้อมูลนักศึกษา
+    พก `identity` มาด้วยเหมือน `NoActivityFrame` เพื่อให้ agent รู้ว่าคุยกับใคร
+    """
 
     code = "NOT_STUDENT"
-    message_th = "AURA ให้บริการเฉพาะนักศึกษาครับ บัญชีที่เข้าสู่ระบบอยู่ไม่ใช่บัญชีนักศึกษา"
+    message_th = "ส่วนนี้ใช้ได้เฉพาะนักศึกษาครับ บัญชีที่เข้าสู่ระบบอยู่ไม่ใช่บัญชีนักศึกษา"
+
+    def __init__(self, detail: str = "", *, identity: object | None = None) -> None:
+        super().__init__(detail)
+        self.identity = identity
 
 
 class NoActivityFrame(ActApiError):

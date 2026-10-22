@@ -6,6 +6,7 @@ pure function ทั้งหมด ไม่มี I/O และไม่เร
 from .formatter import (
     format_hours,
     format_no_frame,
+    format_not_student,
     format_progress,
     format_recommendations,
     format_registrations,
@@ -31,7 +32,7 @@ from .registration_mapper import (
     map_registrations,
     status_label,
 )
-from .schedule_filter import filter_eligible
+from .schedule_filter import filter_eligible, filter_open
 
 __all__ = [
     "EligibleSchedule",
@@ -45,8 +46,10 @@ __all__ = [
     "analyze_gaps",
     "attendance_hours",
     "filter_eligible",
+    "filter_open",
     "format_hours",
     "format_no_frame",
+    "format_not_student",
     "format_progress",
     "format_recommendations",
     "format_registrations",

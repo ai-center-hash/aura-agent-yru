@@ -8,8 +8,14 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import ToolNode
 
 from .. import clock
-from ..data import NoActivityFrame, get_act_client
-from ..processing import StudentProfile, analyze_gaps, format_no_frame, format_progress
+from ..data import NoActivityFrame, NotAStudent, get_act_client
+from ..processing import (
+    StudentProfile,
+    analyze_gaps,
+    format_no_frame,
+    format_not_student,
+    format_progress,
+)
 from ..tools import TOOLS, jwt_from
 from .errors import LLM_ERRORS, LLMUnavailable
 from .llm import get_llm
@@ -39,6 +45,16 @@ async def load_student(state: AgentState, config: RunnableConfig) -> dict[str, A
         return {
             "student": StudentProfile.from_passport(identity) if identity is not None else None,
             "progress_text": format_no_frame(missing.detail),
+            "loaded_at": now,
+            "tool_rounds": 0,
+        }
+    except NotAStudent as staff:
+        # บุคลากร: คุยได้และค้นหารอบกิจกรรมได้ แต่ไม่มีข้อมูลกิจกรรมของตัวเอง
+        identity = staff.identity
+        profile = StudentProfile.from_passport(identity) if identity is not None else None
+        return {
+            "student": profile,
+            "progress_text": format_not_student(profile.faculty if profile else None),
             "loaded_at": now,
             "tool_rounds": 0,
         }

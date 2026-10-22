@@ -418,7 +418,7 @@ async def test_ping_false_when_unreachable(client, respx_mock):
 
 # ---- โหมด passport: ยืนยันตัวตนกับ Passport แล้วเรียกเส้น public ----
 
-from aura_agent.data import ActClient, NoActivityFrame, PassportClient  # noqa: E402
+from aura_agent.data import ActClient, NoActivityFrame, NotAStudent, PassportClient  # noqa: E402
 from aura_agent.data.act_client import SUMMARY_USER_PATH, build_act_client  # noqa: E402
 from aura_agent.data.passport import USERINFO_PATH  # noqa: E402
 
@@ -512,6 +512,27 @@ async def test_no_frame_raises_with_identity(passport_client, respx_mock):
     assert error.value.code == "NO_FRAME"
     assert error.value.detail == "ไม่พบกรอบกิจกรรมที่ตรงกับกลุ่มของผู้ใช้"
     assert error.value.identity.student_code == STUDENT_CODE
+
+
+async def test_staff_summary_raises_without_calling_activity_api(passport_client, respx_mock):
+    """username ของบุคลากรไม่ใช่รหัสนักศึกษา ห้ามเอาไปค้น summary/user/{รหัส}"""
+    staff = {**PASSPORT_INFO, "user_type": "staff", "username": "somchai.j"}
+    respx_mock.get(USERINFO_URL).mock(return_value=httpx.Response(200, json=staff))
+    summary_route = respx_mock.get(url__startswith=f"{BASE_URL}{SUMMARY_USER_PATH}/")
+
+    with pytest.raises(NotAStudent) as error:
+        await passport_client.get_my_summary(JWT)
+
+    assert error.value.code == "NOT_STUDENT"
+    assert error.value.identity.is_student is False
+    assert summary_route.call_count == 0
+
+
+async def test_staff_has_a_subject_for_chat_history(passport_client, respx_mock):
+    staff = {**PASSPORT_INFO, "user_type": "staff", "sub": 77}
+    respx_mock.get(USERINFO_URL).mock(return_value=httpx.Response(200, json=staff))
+
+    assert await passport_client.get_subject(JWT) == "passport:77"
 
 
 async def test_no_frame_in_activity_me_mode_has_no_identity(client, respx_mock):

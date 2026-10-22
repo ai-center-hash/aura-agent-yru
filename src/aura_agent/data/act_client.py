@@ -23,7 +23,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from ..config import Settings, get_settings
 from .cache import Cache, MemoryCache, make_cache_key
-from .errors import NoActivityFrame, UpstreamSchemaError
+from .errors import NoActivityFrame, NotAStudent, UpstreamSchemaError
 from .http import JsonApi
 from .passport import PassportClient
 from .schemas import PassportUser, Registration, Schedule, StudentSummary
@@ -96,6 +96,8 @@ class ActClient(JsonApi):
         """ความคืบหน้ากิจกรรมของเจ้าของ token (`user.id` ที่ได้คือ user_id ที่เชื่อถือได้)
 
         นักศึกษาที่ยังไม่มีกรอบกิจกรรมจะได้ `NoActivityFrame`
+        บุคลากร (โหมด passport) จะได้ `NotAStudent` โดยไม่เรียก Activity API
+        เพราะ username ของบุคลากรไม่ใช่รหัสนักศึกษา
         """
         if self._passport is None:
             payload = await self._get_json(
@@ -104,6 +106,8 @@ class ActClient(JsonApi):
             return self._summary_of(payload, SUMMARY_PATH, identity=None)
 
         identity = await self._passport.get_identity(jwt)
+        if not identity.is_student:
+            raise NotAStudent(f"user_type={identity.user_type}", identity=identity)
         payload = await self._get_json(
             f"{SUMMARY_USER_PATH}/{quote(identity.student_code or '', safe='')}",
             {},

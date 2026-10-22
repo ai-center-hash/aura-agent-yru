@@ -5,7 +5,6 @@ import pytest
 
 from aura_agent.data import (
     MemoryCache,
-    NotAStudent,
     PassportClient,
     PassportUnavailable,
     TokenExpired,
@@ -79,15 +78,24 @@ async def test_expired_token_raises_token_expired(passport, respx_mock):
     assert route.call_count == 1  # 401 ไม่ยิงซ้ำ
 
 
-async def test_staff_account_is_rejected(passport, respx_mock):
-    staff = {**STUDENT_INFO, "user_type": "staff"}
+async def test_staff_identity_is_returned(passport, respx_mock):
+    """บุคลากรผ่านการยืนยันตัวตนได้ ผู้เรียกตัดสินเองจาก `is_student` ว่าทำอะไรได้"""
+    staff = {**STUDENT_INFO, "user_type": "staff", "username": "somchai.j"}
     respx_mock.get(USERINFO_URL).mock(return_value=httpx.Response(200, json=staff))
 
-    with pytest.raises(NotAStudent) as error:
-        await passport.get_identity(TOKEN)
+    user = await passport.get_identity(TOKEN)
 
-    assert error.value.code == "NOT_STUDENT"
-    assert "นักศึกษา" in error.value.message_th
+    assert user.is_student is False
+    assert user.sub == "10001"
+
+
+async def test_staff_without_username_is_fine(passport, respx_mock):
+    staff = {**STUDENT_INFO, "user_type": "staff", "username": None, "preferred_username": None}
+    respx_mock.get(USERINFO_URL).mock(return_value=httpx.Response(200, json=staff))
+
+    user = await passport.get_identity(TOKEN)
+
+    assert user.student_code is None
 
 
 async def test_student_without_username_is_schema_error(passport, respx_mock):

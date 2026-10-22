@@ -10,7 +10,7 @@
 from pydantic import ValidationError
 
 from .cache import Cache, MemoryCache, make_cache_key
-from .errors import NotAStudent, PassportUnavailable, UpstreamSchemaError
+from .errors import PassportUnavailable, UpstreamSchemaError
 from .http import JsonApi
 from .schemas import PassportUser
 
@@ -36,7 +36,7 @@ class PassportClient(JsonApi):
         self._cache: Cache = cache if cache is not None else MemoryCache()
 
     async def get_identity(self, token: str) -> PassportUser:
-        """ตัวตนของเจ้าของ token · ไม่ใช่นักศึกษาจะได้ `NotAStudent`"""
+        """ตัวตนของเจ้าของ token (นักศึกษาหรือบุคลากรก็ได้ ดู `PassportUser.is_student`)"""
         key = make_cache_key(USERINFO_PATH, {}, token)
         payload = await self._cache.get(key)
         if payload is None:
@@ -49,8 +49,6 @@ class PassportClient(JsonApi):
             fields = ", ".join(".".join(map(str, error["loc"])) for error in exc.errors()[:5])
             raise UpstreamSchemaError(f"{USERINFO_PATH}: ฟิลด์ไม่ตรง schema {fields}") from exc
 
-        if not user.is_student:
-            raise NotAStudent(f"{USERINFO_PATH}: user_type={user.user_type}")
-        if not user.student_code:
+        if user.is_student and not user.student_code:
             raise UpstreamSchemaError(f"{USERINFO_PATH}: ไม่มี username ของนักศึกษา")
         return user

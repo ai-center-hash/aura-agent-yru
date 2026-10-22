@@ -13,11 +13,12 @@ MANDATORY_KEYWORD = "บังคับ"
 
 @dataclass(frozen=True, slots=True)
 class StudentProfile:
-    """ตัวตนของนักศึกษาที่คุยอยู่ — มาจาก token เสมอ (ผ่าน summary ของ Activity API หรือ Passport)
+    """ตัวตนของผู้ใช้ที่คุยอยู่ — มาจาก token เสมอ (ผ่าน summary ของ Activity API หรือ Passport)
 
     เก็บเท่าที่ใช้ตัดสินสิทธิ์สมัครและใช้ทักทาย ไม่เก็บอีเมล
     `id` (user_id ของ Activity API) เป็น None เมื่อนักศึกษายังไม่มีกรอบกิจกรรม
     เพราะตอนนั้น API ไม่คืนข้อมูลผู้ใช้มาให้ จึงดูประวัติการลงทะเบียนไม่ได้
+    `is_student=False` คือบุคลากร (อาจารย์ เจ้าหน้าที่ แอดมิน) ซึ่งไม่มีกรอบกิจกรรมและรหัสนักศึกษา
     """
 
     id: int | None
@@ -26,6 +27,7 @@ class StudentProfile:
     major: str | None = None
     student_status: str = "normal"
     student_id: str | None = None
+    is_student: bool = True
 
     @property
     def is_transfer(self) -> bool:
@@ -44,12 +46,17 @@ class StudentProfile:
 
     @classmethod
     def from_passport(cls, user: PassportUser) -> "StudentProfile":
-        """ใช้เมื่อยังไม่มีกรอบกิจกรรม — รู้ชื่อ รหัส และคณะ แต่ไม่รู้ user_id กับประเภทนักศึกษา"""
+        """ใช้เมื่อไม่มีกรอบกิจกรรม (นักศึกษาที่ยังไม่มีกรอบ หรือบุคลากร)
+
+        รู้ชื่อและหน่วยงาน แต่ไม่รู้ user_id กับประเภทนักศึกษา
+        username ของบุคลากรไม่ใช่รหัสนักศึกษา จึงไม่เก็บเป็น `student_id`
+        """
         return cls(
             id=None,
             name=user.display,
             faculty=user.org_unit_1_name,
-            student_id=user.student_code,
+            student_id=user.student_code if user.is_student else None,
+            is_student=user.is_student,
         )
 
 

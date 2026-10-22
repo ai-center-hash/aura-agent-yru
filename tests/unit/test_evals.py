@@ -49,8 +49,8 @@ def make_result(case: EvalCase, **overrides) -> CaseResult:
 def test_dataset_loads_with_expected_shape():
     cases = load_dataset()
 
-    assert len(cases) == 45
-    assert len({case.id for case in cases}) == 45  # id ต้องไม่ซ้ำ
+    assert len(cases) == 50
+    assert len({case.id for case in cases}) == 50  # id ต้องไม่ซ้ำ
 
 
 def test_dataset_category_counts_match_the_plan():
@@ -58,7 +58,7 @@ def test_dataset_category_counts_match_the_plan():
     for case in load_dataset():
         counts[case.category] = counts.get(case.category, 0) + 1
 
-    assert counts == {"progress": 12, "search": 11, "recommend": 9, "history": 7, "safety": 6}
+    assert counts == {"progress": 13, "search": 12, "recommend": 10, "history": 8, "safety": 7}
 
 
 def test_dataset_uses_existing_personas():
@@ -69,6 +69,7 @@ def test_dataset_uses_existing_personas():
         "transfer_with_gaps",
         "completed_all",
         "realistic_with_gaps",
+        "staff_member",
     }
     for case in load_dataset():
         assert case.persona in personas, case.id
@@ -293,9 +294,31 @@ def test_personas_load(name):
 
 
 def test_persona_summaries_are_different_students():
-    ids = {load_persona(name).user_id for name in available_personas()}
+    subjects = {load_persona(name).subject for name in available_personas()}
 
-    assert len(ids) == len(available_personas())
+    assert len(subjects) == len(available_personas())
+
+
+def test_staff_persona_has_no_activity_data():
+    persona = load_persona("staff_member")
+
+    assert persona.is_student is False
+    assert persona.summary is None
+    assert persona.registrations == []
+    assert persona.identity.is_student is False
+    assert persona.subject.startswith("passport:")
+    assert persona.schedules
+
+
+async def test_staff_persona_client_raises_not_a_student():
+    from aura_agent.data import NotAStudent
+
+    client = PersonaClient(load_persona("staff_member"))
+
+    with pytest.raises(NotAStudent) as error:
+        await client.get_my_summary(JWT)
+
+    assert error.value.identity.user_type == "staff"
 
 
 def test_missing_persona_raises():

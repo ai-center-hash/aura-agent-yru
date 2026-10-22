@@ -3,9 +3,9 @@
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 
-from ..data import NoActivityFrame, get_act_client
+from ..data import NoActivityFrame, NotAStudent, get_act_client
 from ..processing import analyze_gaps, format_no_frame, format_progress
-from .context import jwt_from
+from .context import NOT_STUDENT_MESSAGE, jwt_from
 
 
 @tool
@@ -19,4 +19,6 @@ async def get_my_progress(*, config: RunnableConfig) -> str:
         summary = await get_act_client().get_my_summary(jwt_from(config))
     except NoActivityFrame as missing:
         return format_no_frame(missing.detail)
+    except NotAStudent:
+        return NOT_STUDENT_MESSAGE.format(subject="ความคืบหน้ากิจกรรม")
     return format_progress(analyze_gaps(summary))

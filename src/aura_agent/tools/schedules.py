@@ -9,7 +9,7 @@ from langgraph.prebuilt import InjectedState
 
 from .. import clock
 from ..data import get_act_client
-from ..processing import filter_eligible, format_schedules
+from ..processing import filter_eligible, filter_open, format_schedules
 from .context import BAD_DATE_MESSAGE, NO_STUDENT_MESSAGE, jwt_from, student_from
 
 
@@ -33,6 +33,8 @@ async def search_activities(
     phase: "open" = กำลังเปิดรับสมัคร, "upcoming" = ยังไม่เปิดรับสมัครแต่กำลังจะเปิด, ไม่ระบุ = ทั้งหมด
     keyword: คำค้นในชื่อกิจกรรม เช่น "จิตอาสา"
     date_from, date_to: ช่วงวันที่ **จัดกิจกรรม** รูปแบบ YYYY-MM-DD (ปี ค.ศ.) เช่น 2026-11-05
+
+    ถ้าผู้ใช้เป็นบุคลากร จะได้ทุกรอบที่ยังรับสมัคร (ไม่คัดตามคุณสมบัติ) พร้อมป้ายรอบที่เปิดเฉพาะบางกลุ่ม
     """
     student = student_from(state)
     if student is None:
@@ -51,6 +53,9 @@ async def search_activities(
         date_to=activity_to,
         search=keyword,
     )
+    if not student.is_student:
+        # บุคลากรไม่ได้สมัครเอง จึงแสดงทุกรอบที่ยังรับสมัคร พร้อมป้ายรอบที่จำกัดกลุ่ม
+        return format_schedules(filter_open(schedules, clock.today()), for_staff=True)
     eligible = filter_eligible(schedules, student, clock.today())
     return format_schedules(eligible)
 

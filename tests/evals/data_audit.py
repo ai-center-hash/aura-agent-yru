@@ -118,13 +118,14 @@ def collect_facts(persona: Persona, today: date = EVAL_TODAY) -> PersonaFacts:
                 registration.schedule.activity_end_date,
             ]
 
-    for category in persona.summary.categories:
+    categories = persona.summary.categories if persona.summary is not None else []
+    for category in categories:
         for item in category.frame_items:
             for activity in item.activities:
                 titles.add(activity.title)
                 moments += [activity.checkin_at, activity.checkout_at]
 
-    frame = persona.summary.frame
+    frame = persona.summary.frame if persona.summary is not None else None
     if frame:
         for day in (frame.start_date, frame.end_date):
             if day is not None:

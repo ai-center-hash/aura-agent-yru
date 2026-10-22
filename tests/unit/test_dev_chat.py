@@ -174,15 +174,15 @@ async def test_expired_state_is_rejected(web, respx_mock, monkeypatch):
     assert response.status_code == 400
 
 
-async def test_staff_account_cannot_log_in(web, respx_mock):
+async def test_staff_account_can_log_in(web, respx_mock):
+    """บุคลากรเข้าได้ (ค้นหารอบกิจกรรมได้ แต่ไม่มีข้อมูลกิจกรรมของตัวเอง)"""
     mock_passport(respx_mock, userinfo={**STUDENT_INFO, "user_type": "staff"})
     state = await start_login(web)
 
     response = await web.get("/callback", params={"code": "abc", "state": state})
 
-    assert response.headers["location"] == "/?mode=passport&login=not_student"
-    assert "set-cookie" not in response.headers
-    assert web.app.state.sessions == {}
+    assert response.headers["location"] == "/?mode=passport&login=ok"
+    assert len(web.app.state.sessions) == 1
 
 
 async def test_user_cancelled_on_passport(web):

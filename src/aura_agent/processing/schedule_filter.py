@@ -53,6 +53,19 @@ def filter_eligible(
     return eligible
 
 
+def filter_open(schedules: list[Schedule], today: date) -> list[EligibleSchedule]:
+    """รอบที่ยังรับสมัครได้ทั้งหมด ไม่ดูคุณสมบัติผู้สมัคร (ใช้กับบุคลากรที่ไม่ได้สมัครเอง)
+
+    ตัดแค่รอบที่เต็มและรอบที่หมดเวลารับสมัคร รอบที่จำกัดกลุ่มเป้าหมายยังแสดง
+    แต่ formatter จะติดป้ายว่าเปิดเฉพาะบางกลุ่ม
+    """
+    return [
+        EligibleSchedule(schedule)
+        for schedule in schedules
+        if not schedule.is_full and not _registration_closed(schedule, today)
+    ]
+
+
 def _registration_closed(schedule: Schedule, today: date) -> bool:
     """ปิดรับสมัครแล้วหรือยัง (วันสุดท้ายยังนับว่าสมัครได้)"""
     deadline = schedule.registration_end_date

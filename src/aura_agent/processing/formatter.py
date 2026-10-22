@@ -39,6 +39,9 @@ THAI_MONTHS = (
 
 MAX_ITEMS = 10
 UNCERTAIN_TAG = "ไม่แน่ใจเรื่องสิทธิ์สมัคร"
+RESTRICTED_TAG = "เปิดเฉพาะบางกลุ่ม"
+SCHEDULES_TITLE = "กิจกรรมที่สมัครได้"
+OPEN_SCHEDULES_TITLE = "รอบกิจกรรมที่ยังรับสมัคร (ทุกกลุ่มผู้สมัคร)"
 # ประเภทแบบตัวอย่างในคู่มือ ย่อได้โดยไม่เสียความหมาย
 SHORT_TYPES = {"กิจกรรมบังคับ": "บังคับ", "กิจกรรมเลือก": "เลือก"}
 
@@ -131,23 +134,47 @@ def format_no_frame(api_message: str | None = None) -> str:
     return "\n".join(lines)
 
 
+def format_not_student(unit: str | None = None) -> str:
+    """ใช้แทน `format_progress` เมื่อผู้ใช้เป็นบุคลากร (อาจารย์ เจ้าหน้าที่ แอดมิน)"""
+    where = f" สังกัด {unit}" if unit else ""
+    lines = [
+        f"[ความคืบหน้า] ผู้ใช้คนนี้เป็นบุคลากร ไม่ใช่นักศึกษา{where}",
+        "จึงไม่มีความคืบหน้ากิจกรรม ประวัติการลงทะเบียน หรือกิจกรรมที่แนะนำให้ตัวเอง",
+        "ถ้าถูกถามเรื่องเหล่านี้ ให้บอกสุภาพว่าส่วนนี้ใช้ได้เฉพาะนักศึกษา",
+        "ส่วนการค้นหารอบกิจกรรมใช้ได้ตามปกติ (เห็นทุกรอบที่ยังรับสมัคร ไม่ได้คัดตามคุณสมบัติผู้สมัคร)",
+        "บุคลากรก็ดูข้อมูลของนักศึกษาคนอื่นไม่ได้ ถ้าถูกขอ ให้ปฏิเสธเหมือนกรณีนักศึกษา",
+    ]
+    return "\n".join(lines)
+
+
 # ---- รายการกิจกรรม ----
 
 
 def format_schedules(
-    items: list[EligibleSchedule], *, total: int | None = None, tz: tzinfo = BANGKOK
+    items: list[EligibleSchedule],
+    *,
+    total: int | None = None,
+    tz: tzinfo = BANGKOK,
+    for_staff: bool = False,
 ) -> str:
-    """รายการกิจกรรมที่สมัครได้ (`total` ใส่เมื่อจำนวนทั้งหมดมากกว่าที่ส่งเข้ามา)"""
+    """รายการกิจกรรมที่สมัครได้ (`total` ใส่เมื่อจำนวนทั้งหมดมากกว่าที่ส่งเข้ามา)
+
+    `for_staff=True` ใช้กับผลของ `filter_open` (บุคลากร): เปลี่ยนหัวข้อ
+    และติดป้ายรอบที่จำกัดกลุ่มเป้าหมาย แทนการบอกว่าผู้ใช้สมัครได้หรือไม่
+    """
+    title = OPEN_SCHEDULES_TITLE if for_staff else SCHEDULES_TITLE
     if not items:
-        return "[กิจกรรมที่สมัครได้] ไม่มีรายการที่ตรงเงื่อนไข"
+        return f"[{title}] ไม่มีรายการที่ตรงเงื่อนไข"
 
     shown = items[:MAX_ITEMS]
     count = total if total is not None else len(items)
-    header = _header("กิจกรรมที่สมัครได้", shown_count=len(shown), total_count=count)
+    header = _header(title, shown_count=len(shown), total_count=count)
 
     lines = [header]
     for index, item in enumerate(shown, start=1):
         detail = _schedule_detail(item.schedule, tz=tz)
+        if for_staff and item.schedule.is_restricted:
+            detail = f"{detail} | {RESTRICTED_TAG}"
         if item.eligibility_uncertain:
             detail = f"{detail} | {UNCERTAIN_TAG}"
         lines.append(f"{index}. {detail}")

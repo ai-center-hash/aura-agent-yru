@@ -17,6 +17,7 @@ _LEADING_COMMENT = re.compile(r"\A\s*<!--.*?-->\s*", re.DOTALL)
 
 UNKNOWN_NAME = "ไม่ทราบชื่อ"
 UNKNOWN_FIELD = "ไม่ระบุ"
+STAFF_TYPE = "บุคลากร (ไม่ใช่นักศึกษา)"
 NO_PROGRESS_TEXT = "[ความคืบหน้า] ยังไม่มีข้อมูล ถ้าผู้ใช้ถามเรื่องความคืบหน้าให้เรียก get_my_progress ก่อนตอบ"
 
 
@@ -48,4 +49,6 @@ def render_system_prompt(
 def _student_type(student: StudentProfile | None) -> str:
     if student is None:
         return UNKNOWN_FIELD
+    if not student.is_student:
+        return STAFF_TYPE
     return "เทียบโอน" if student.is_transfer else "นักศึกษาปกติ"
