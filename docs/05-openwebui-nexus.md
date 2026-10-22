@@ -35,6 +35,28 @@ AURA ขึ้นเป็น "โมเดล" ตัวหนึ่งใน Y
 6. (แนะนำ) **Admin Panel → Settings → Interface** ตั้ง Task Model เป็นโมเดลอื่น เพื่อให้การตั้งชื่อแชทใช้โมเดลนั้น
    ถ้าไม่ตั้ง Pipe จะตั้งชื่อแชทจากคำถามแรกเอง และไม่ส่งงานเบื้องหลังเหล่านี้ไปที่ AURA
 
+## ติดตั้งหรืออัปเดตผ่าน SSH (ไม่ต้องใช้บัญชี admin ของหน้าเว็บ)
+
+ใช้ตอนติดตั้งจริงครั้งแรก (2026-10-22) · ทำแบบเดียวกับ Admin Panel โดยเรียกโค้ดของ Open WebUI ใน container
+
+```powershell
+# บนเครื่อง dev
+scp integrations\openwebuiura_pipe.py integrations\openwebui\install_in_container.py yruadmin@10.20.41.108:~/
+```
+```bash
+# บนเครื่อง Nexus (รันทีละบรรทัด)
+sudo -v
+sudo docker exec open-webui-4000 python3 -c "import sqlite3,time; s=sqlite3.connect('/app/backend/data/webui.db'); d=sqlite3.connect('/app/backend/data/webui.db.bak-'+time.strftime('%Y%m%d-%H%M%S')); s.backup(d)"
+sudo docker cp ~/aura_pipe.py open-webui-4000:/tmp/aura_pipe.py
+sudo docker cp ~/install_in_container.py open-webui-4000:/tmp/install_in_container.py
+ AURA_KEY='ค่า SERVICE_KEY'          # ขึ้นต้นด้วยช่องว่าง จะได้ไม่เข้า history
+echo "$AURA_KEY" | sudo docker exec -i -w /app/backend -e PYTHONPATH=/app/backend open-webui-4000 python3 /tmp/install_in_container.py
+unset AURA_KEY
+sudo docker exec open-webui-4000 rm -f /tmp/install_in_container.py /tmp/aura_pipe.py; rm -f ~/install_in_container.py ~/aura_pipe.py
+```
+
+สำเร็จจะได้ `{"action": "created" หรือ "updated", "id": "aura", "is_active": true, ..., "has_valves": true}`
+
 ## ทดสอบหลังติดตั้ง
 
 ออกจากระบบแล้ว login ใหม่ด้วย **YRU Passport** (บัญชีรหัสผ่านของ Nexus ใช้ไม่ได้ เพราะไม่มี token ของ Passport) แล้วถาม
