@@ -70,6 +70,13 @@ class NotAStudent(ActApiError):
         self.identity = identity
 
 
+class NotYourAdvisee(ActApiError):
+    """อาจารย์ขอดูนักศึกษาที่ไม่ได้อยู่ในรายชื่อที่ปรึกษาของตัวเอง (tool แปลงเป็นข้อความปฏิเสธ)"""
+
+    code = "NOT_YOUR_ADVISEE"
+    message_th = "นักศึกษาคนนี้ไม่ได้อยู่ในรายชื่อนักศึกษาในที่ปรึกษาของคุณครับ จึงดูข้อมูลไม่ได้"
+
+
 class NoActivityFrame(ActApiError):
     """ระบบกิจกรรมยังไม่มีกรอบกิจกรรมที่ตรงกับกลุ่มของนักศึกษาคนนี้ (`no_frame: true`)
 

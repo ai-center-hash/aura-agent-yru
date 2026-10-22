@@ -28,6 +28,7 @@ class StudentProfile:
     student_status: str = "normal"
     student_id: str | None = None
     is_student: bool = True
+    position: str | None = None  # ตำแหน่งของบุคลากร เช่น "อาจารย์" (นักศึกษาเป็น None)
 
     @property
     def is_transfer(self) -> bool:
@@ -57,6 +58,7 @@ class StudentProfile:
             faculty=user.org_unit_1_name,
             student_id=user.student_code if user.is_student else None,
             is_student=user.is_student,
+            position=None if user.is_student else user.position_name,
         )
 
 

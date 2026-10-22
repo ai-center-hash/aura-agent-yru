@@ -16,7 +16,7 @@ from ..processing import (
     format_not_student,
     format_progress,
 )
-from ..tools import TOOLS, jwt_from
+from ..tools import TOOLS, jwt_from, tools_for
 from .errors import LLM_ERRORS, LLMUnavailable
 from .llm import get_llm
 from .prompts import render_system_prompt
@@ -74,7 +74,11 @@ async def agent(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
     ถ้าเรียก tool ครบ `MAX_TOOL_ROUNDS` แล้วจะเรียก LLM แบบไม่ bind tools เพื่อบังคับให้ตอบ
     """
     llm = get_llm()
-    model = llm if state.get("tool_rounds", 0) >= MAX_TOOL_ROUNDS else llm.bind_tools(TOOLS)
+    student = state.get("student")
+    if state.get("tool_rounds", 0) >= MAX_TOOL_ROUNDS:
+        model = llm
+    else:
+        model = llm.bind_tools(tools_for(student))
     system_prompt = render_system_prompt(
         clock.today(), state.get("student"), state.get("progress_text")
     )

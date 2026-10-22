@@ -23,10 +23,10 @@ from pydantic import TypeAdapter, ValidationError
 
 from ..config import Settings, get_settings
 from .cache import Cache, MemoryCache, make_cache_key
-from .errors import NoActivityFrame, NotAStudent, UpstreamSchemaError
+from .errors import NoActivityFrame, NotAStudent, NotYourAdvisee, UpstreamSchemaError
 from .http import JsonApi
 from .passport import PassportClient
-from .schemas import PassportUser, Registration, Schedule, StudentSummary
+from .schemas import Advisee, PassportUser, Registration, Schedule, StudentSummary
 
 logger = logging.getLogger(__name__)
 
@@ -35,15 +35,19 @@ SUMMARY_USER_PATH = "/v1/report/summary/user"
 SUMMARY_USER_LABEL = "/v1/report/summary/user/{student}"  # ใช้ใน log/error แทนรหัสจริง
 SCHEDULES_PATH = "/v1/act/activity-schedules"
 REGISTRATIONS_PATH = "/v1/act/act-registrations"
+USERS_PATH = "/v1/auth/users"
+ADVISEES_LABEL = "/v1/auth/users?advisor={advisor}"  # ใช้ใน log/error แทนรหัสอาจารย์
 
 SUMMARY_TTL_S = 120.0
 SCHEDULES_TTL_S = 120.0
 REGISTRATIONS_TTL_S = 60.0
+ADVISEES_TTL_S = 300.0
 
 PUBLIC_SCOPE = "public"  # ข้อมูลที่เหมือนกันทุกคน จึงใช้ cache ร่วมกันได้
 
 _SCHEDULE_LIST = TypeAdapter(list[Schedule])
 _REGISTRATION_LIST = TypeAdapter(list[Registration])
+_ADVISEE_LIST = TypeAdapter(list[Advisee])
 
 RegistrationPhase = Literal["open", "upcoming"]
 
@@ -179,6 +183,75 @@ class ActClient(JsonApi):
         )
         data = self._unwrap(payload, REGISTRATIONS_PATH, list)
         return self._validate(_REGISTRATION_LIST.validate_python, data, REGISTRATIONS_PATH)
+
+    # ---- นักศึกษาในที่ปรึกษา (อาจารย์) ----
+
+    async def get_advisees(self, jwt: str) -> list[Advisee]:
+        """นักศึกษาในที่ปรึกษาของเจ้าของ token เรียงตามรหัส (ไม่ใช่อาจารย์ที่ปรึกษาจะได้ list ว่าง)
+
+        อาจารย์ระบุจาก `user_type_id` ใน Passport ของเจ้าของ token เท่านั้น (ไม่รับจากข้อความผู้ใช้)
+        แล้วให้ Activity API กรองด้วย `advisor_type_ref_id` · **กรองซ้ำฝั่งเรา** เผื่อ API เมินพารามิเตอร์
+        (เคยเจอกับ `advisor_username` ที่ถูกเมินแล้วได้นักศึกษาทั้งมหาวิทยาลัย)
+        เก็บใน cache เฉพาะฟิลด์ของ `Advisee` ไม่เก็บ response ดิบที่มีที่อยู่/เบอร์โทร
+        """
+        identity = await self.get_identity(jwt)
+        if identity is None or identity.is_student or not identity.user_type_id:
+            return []
+
+        advisor = identity.user_type_id
+        key = make_cache_key(ADVISEES_LABEL, {"advisor": advisor}, jwt)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return self._validate(_ADVISEE_LIST.validate_python, cached, ADVISEES_LABEL)
+
+        params = {
+            "paginate": "false",
+            "type": "student",
+            "advisor_type_ref_id": advisor,
+            "include_activity_summary": "1",
+            "sort_by": "username",
+            "sort_order": "asc",
+        }
+        payload = await self._fetch(
+            USERS_PATH, params, auth=self._forwarded(jwt), label=ADVISEES_LABEL
+        )
+        rows = self._validate(
+            _ADVISEE_LIST.validate_python,
+            self._unwrap(payload, ADVISEES_LABEL, list),
+            ADVISEES_LABEL,
+        )
+        advisees = [row for row in rows if row.advisor_type_ref_id == advisor]
+        if len(advisees) != len(rows):
+            logger.warning(
+                "act_client path=%s dropped=%d (not this advisor)",
+                ADVISEES_LABEL,
+                len(rows) - len(advisees),
+            )
+        await self._cache.set(key, [row.model_dump() for row in advisees], ADVISEES_TTL_S)
+        return advisees
+
+    async def get_advisee_summary(
+        self, jwt: str, student_code: str
+    ) -> tuple[Advisee, StudentSummary]:
+        """ความคืบหน้าของนักศึกษา 1 คน **เฉพาะเมื่ออยู่ในที่ปรึกษาของเจ้าของ token**
+
+        รหัสนักศึกษามาจากข้อความของผู้ใช้ได้ เพราะตรวจกับรายชื่อจาก `get_advisees()` ทุกครั้ง
+        ไม่อยู่ในรายชื่อ → `NotYourAdvisee` โดยไม่เรียก summary ของรหัสนั้นเลย
+        """
+        code = student_code.strip()
+        advisee = next((row for row in await self.get_advisees(jwt) if row.username == code), None)
+        if advisee is None:
+            raise NotYourAdvisee("รหัสที่ขอไม่อยู่ในรายชื่อที่ปรึกษา")
+
+        payload = await self._get_json(
+            f"{SUMMARY_USER_PATH}/{quote(code, safe='')}",
+            {},
+            auth=None,
+            cache_scope=f"advisee:{code}",
+            ttl_s=SUMMARY_TTL_S,
+            label=SUMMARY_USER_LABEL,
+        )
+        return advisee, self._summary_of(payload, SUMMARY_USER_LABEL, identity=None)
 
     # ---- health check ----
 

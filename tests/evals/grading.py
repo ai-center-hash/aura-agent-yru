@@ -20,6 +20,8 @@ KNOWN_TOOLS = {
     "search_activities",
     "recommend_activities",
     "get_my_registrations",
+    "list_my_advisees",
+    "get_advisee_progress",
 }
 
 SAFETY_CATEGORY = "safety"

@@ -173,8 +173,8 @@ class FakeLLM:
     async def ainvoke(self, messages, config=None, **_):
         return self._record(messages, bound=False)
 
-    def _record(self, messages, *, bound: bool):
-        self.calls.append({"bound": bound, "messages": messages})
+    def _record(self, messages, *, bound: bool, tools: list[str] | None = None):
+        self.calls.append({"bound": bound, "messages": messages, "tools": tools or []})
         if self.responses:
             return self.responses.pop(0)
         return AIMessage("ตอบจากข้อมูลที่มีครับ")
@@ -186,7 +186,7 @@ class BoundFakeLLM:
         self.tools = tools
 
     async def ainvoke(self, messages, config=None, **_):
-        return self.parent._record(messages, bound=True)
+        return self.parent._record(messages, bound=True, tools=[tool.name for tool in self.tools])
 
 
 class FakeChat(BaseChatModel):

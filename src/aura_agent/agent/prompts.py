@@ -12,6 +12,8 @@ from pathlib import Path
 from ..processing import StudentProfile, thai_date
 
 PROMPT_PATH = Path(__file__).parents[3] / "prompts" / "system_prompt.th.md"
+# บุคลากรใช้ prompt แยก เพื่อไม่ให้การเพิ่มความสามารถของอาจารย์กระทบคำตอบของนักศึกษา
+STAFF_PROMPT_PATH = PROMPT_PATH.with_name("system_prompt_staff.th.md")
 
 _LEADING_COMMENT = re.compile(r"\A\s*<!--.*?-->\s*", re.DOTALL)
 
@@ -35,8 +37,14 @@ def render_system_prompt(
     *,
     template: str | None = None,
 ) -> str:
-    """เติมค่าลง prompt ใหม่ทุกครั้งที่เรียก LLM (ไม่เก็บลง messages)"""
-    return (template or load_template()).format(
+    """เติมค่าลง prompt ใหม่ทุกครั้งที่เรียก LLM (ไม่เก็บลง messages)
+
+    บุคลากรใช้ `system_prompt_staff.th.md` ส่วนนักศึกษา (หรือยังไม่รู้บทบาท) ใช้ `system_prompt.th.md`
+    """
+    if template is None:
+        staff = student is not None and not student.is_student
+        template = load_template(str(STAFF_PROMPT_PATH) if staff else None)
+    return template.format(
         today=f"{thai_date(today)} ({today.isoformat()})",
         student_name=student.name if student else UNKNOWN_NAME,
         student_faculty=(student.faculty if student else None) or UNKNOWN_FIELD,
@@ -50,5 +58,5 @@ def _student_type(student: StudentProfile | None) -> str:
     if student is None:
         return UNKNOWN_FIELD
     if not student.is_student:
-        return STAFF_TYPE
+        return f"บุคลากร · {student.position}" if student.position else STAFF_TYPE
     return "เทียบโอน" if student.is_transfer else "นักศึกษาปกติ"

@@ -15,10 +15,14 @@ class PassportUser(ActModel):
     name: str | None = None
     display_name: str | None = None
     org_unit_1_name: str | None = None
+    position_name: str | None = None  # ของบุคลากร เช่น "อาจารย์"
+    # รหัสอ้างอิงของผู้ใช้ในระบบบุคลากร/ทะเบียน · ของอาจารย์ใช้จับคู่กับ `advisor_type_ref_id` ของนักศึกษา
+    # (claim `cid` ซึ่งเป็นเลขบัตรประชาชน ห้ามประกาศเพิ่มในนี้)
+    user_type_id: str | None = None
 
-    @field_validator("sub", mode="before")
+    @field_validator("sub", "user_type_id", mode="before")
     @classmethod
-    def _sub_as_str(cls, value: object) -> object:
+    def _id_as_str(cls, value: object) -> object:
         return str(value) if isinstance(value, int) else value
 
     @property

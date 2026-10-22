@@ -1,5 +1,6 @@
 """Pydantic schemas ของ response จาก Activity API (Phase 1)"""
 
+from .advisee import ActivityProgress, Advisee
 from .base import ActModel
 from .passport import PassportUser
 from .registration import Registration, RegistrationActivity, RegistrationSchedule
@@ -17,6 +18,8 @@ from .summary import (
 
 __all__ = [
     "ActModel",
+    "ActivityProgress",
+    "Advisee",
     "ActivityFrame",
     "AttendedActivity",
     "FrameItem",

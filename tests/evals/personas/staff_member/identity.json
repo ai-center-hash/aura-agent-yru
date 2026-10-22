@@ -3,5 +3,7 @@
   "username": "staff.test",
   "user_type": "staff",
   "display_name": "อาจารย์สมมติ ทดสอบระบบ",
-  "org_unit_1_name": "คณะวิทยาศาสตร์และเทคโนโลยี"
+  "org_unit_1_name": "คณะวิทยาศาสตร์และเทคโนโลยี",
+  "user_type_id": "990001",
+  "position_name": "อาจารย์"
 }

@@ -4,6 +4,8 @@ pure function ทั้งหมด ไม่มี I/O และไม่เร
 """
 
 from .formatter import (
+    format_advisee_progress,
+    format_advisees,
     format_hours,
     format_no_frame,
     format_not_student,
@@ -35,6 +37,8 @@ from .registration_mapper import (
 from .schedule_filter import filter_eligible, filter_open
 
 __all__ = [
+    "format_advisee_progress",
+    "format_advisees",
     "EligibleSchedule",
     "Gap",
     "PassedItem",

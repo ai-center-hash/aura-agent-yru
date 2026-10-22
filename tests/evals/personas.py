@@ -6,12 +6,18 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-from aura_agent.data import NotAStudent
-from aura_agent.data.schemas import PassportUser, Registration, Schedule, StudentSummary
+from aura_agent.data import NoActivityFrame, NotAStudent, NotYourAdvisee
+from aura_agent.data.schemas import (
+    Advisee,
+    PassportUser,
+    Registration,
+    Schedule,
+    StudentSummary,
+)
 
 PERSONA_DIR = Path(__file__).parent / "personas"
 
@@ -30,6 +36,9 @@ class Persona:
     schedules: list[Schedule]
     registrations: list[Registration]
     identity: PassportUser | None = None
+    # อาจารย์ที่ปรึกษา: แถวจาก /v1/auth/users และ summary ของแต่ละคน (คนที่ไม่มีไฟล์ = ยังไม่มีกรอบ)
+    advisees: list[Advisee] = field(default_factory=list)
+    advisee_summaries: dict[str, StudentSummary] = field(default_factory=dict)
 
     @property
     def is_student(self) -> bool:
@@ -56,8 +65,23 @@ def load_persona(name: str, directory: Path | None = None) -> Persona:
     schedules = [Schedule.model_validate(row) for row in _read(base / "schedules.json")["data"]]
     if (base / "identity.json").exists():
         identity = PassportUser.model_validate(_read(base / "identity.json"))
+        advisees: list[Advisee] = []
+        if (base / "advisees.json").exists():
+            advisees = [
+                Advisee.model_validate(row) for row in _read(base / "advisees.json")["data"]
+            ]
+        summaries = {
+            path.stem: StudentSummary.model_validate(_read(path)["data"])
+            for path in sorted((base / "advisee_summaries").glob("*.json"))
+        }
         return Persona(
-            name=name, summary=None, schedules=schedules, registrations=[], identity=identity
+            name=name,
+            summary=None,
+            schedules=schedules,
+            registrations=[],
+            identity=identity,
+            advisees=advisees,
+            advisee_summaries=summaries,
         )
 
     summary = StudentSummary.model_validate(_read(base / "summary_me.json")["data"])
@@ -131,6 +155,22 @@ class PersonaClient:
         if user_id != self.persona.user_id:
             return []  # เหมือน API: ถาม user อื่นก็ไม่เจอข้อมูลใน fixture นี้
         return self.persona.registrations
+
+    async def get_advisees(self, jwt: str) -> list[Advisee]:
+        self.calls.append(("get_advisees", {}))
+        return list(self.persona.advisees) if not self.persona.is_student else []
+
+    async def get_advisee_summary(self, jwt: str, student_code: str):
+        """เหมือน ActClient: ตรวจรายชื่อที่ปรึกษาก่อนเสมอ"""
+        code = student_code.strip()
+        self.calls.append(("get_advisee_summary", {"code": code}))
+        advisee = next((row for row in await self.get_advisees(jwt) if row.username == code), None)
+        if advisee is None:
+            raise NotYourAdvisee("persona")
+        summary = self.persona.advisee_summaries.get(code)
+        if summary is None:
+            raise NoActivityFrame("ไม่พบกรอบกิจกรรมที่ตรงกับกลุ่มของผู้ใช้")
+        return advisee, summary
 
     async def ping(self) -> bool:
         return True

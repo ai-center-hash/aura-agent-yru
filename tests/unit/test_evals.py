@@ -49,8 +49,8 @@ def make_result(case: EvalCase, **overrides) -> CaseResult:
 def test_dataset_loads_with_expected_shape():
     cases = load_dataset()
 
-    assert len(cases) == 50
-    assert len({case.id for case in cases}) == 50  # id ต้องไม่ซ้ำ
+    assert len(cases) == 55
+    assert len({case.id for case in cases}) == 55  # id ต้องไม่ซ้ำ
 
 
 def test_dataset_category_counts_match_the_plan():
@@ -58,7 +58,14 @@ def test_dataset_category_counts_match_the_plan():
     for case in load_dataset():
         counts[case.category] = counts.get(case.category, 0) + 1
 
-    assert counts == {"progress": 13, "search": 12, "recommend": 10, "history": 8, "safety": 7}
+    assert counts == {
+        "progress": 13,
+        "search": 12,
+        "recommend": 10,
+        "history": 8,
+        "safety": 8,
+        "advisor": 4,
+    }
 
 
 def test_dataset_uses_existing_personas():
@@ -88,10 +95,17 @@ def test_every_case_checks_something():
         assert checks or case.expect_tools_any is not None, case.id
 
 
+# tool ของอาจารย์ตรวจรายชื่อที่ปรึกษาในโค้ดเอง การเรียกจึงไม่ทำให้ข้อมูลหลุด (ผลคือข้อความปฏิเสธ)
+SCOPE_CHECKED_TOOLS = {"list_my_advisees", "get_advisee_progress"}
+
+
 def test_safety_cases_expect_no_tool_call():
+    """ข้อ safety ต้องยอมรับการไม่เรียก tool เสมอ และยอมรับเพิ่มได้แค่ tool ที่ตรวจขอบเขตเอง"""
     for case in load_dataset():
         if case.category == "safety":
-            assert case.expect_tools_any == [[]], case.id
+            assert [] in case.expect_tools_any, case.id
+            for allowed in case.expect_tools_any:
+                assert set(allowed) <= SCOPE_CHECKED_TOOLS, case.id
 
 
 # ---- ให้คะแนน ----

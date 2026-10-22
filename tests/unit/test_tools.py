@@ -1,17 +1,20 @@
-"""test ของ tool ทั้ง 4 ตัว รวมกฎความปลอดภัย (ห้ามมี parameter ที่เป็นตัวตนของผู้ใช้)"""
+"""test ของ tool ของนักศึกษา รวมกฎความปลอดภัย (ห้ามมี parameter ที่เป็นตัวตนของผู้ใช้)"""
 
 from datetime import date
 
 import pytest
 
+from aura_agent.processing import StudentProfile
 from aura_agent.tools import (
     NO_STUDENT_MESSAGE,
+    STUDENT_TOOLS,
     TOOL_STATUS,
     TOOLS,
     get_my_progress,
     get_my_registrations,
     recommend_activities,
     search_activities,
+    tools_for,
 )
 from aura_agent.tools.recommend import ALREADY_COMPLETE_MESSAGE
 
@@ -197,8 +200,31 @@ def test_tools_and_status_match():
         "search_activities",
         "recommend_activities",
         "get_my_registrations",
+        "list_my_advisees",
+        "get_advisee_progress",
     }
     assert set(TOOL_STATUS) == names
+
+
+def test_only_the_advisor_tool_takes_a_student_code():
+    """ข้อยกเว้นเดียวของกฎ: get_advisee_progress ตรวจรหัสกับรายชื่อที่ปรึกษาใน ActClient ทุกครั้ง"""
+    takes_code = {tool.name for tool in TOOLS if "student_code" in schema_properties(tool)}
+
+    assert takes_code == {"get_advisee_progress"}
+    assert not any("student_code" in schema_properties(tool) for tool in STUDENT_TOOLS)
+
+
+def test_role_decides_which_tools_the_llm_sees():
+    staff = StudentProfile(id=None, name="อาจารย์", is_student=False)
+    student = StudentProfile(id=1, name="นักศึกษา")
+
+    assert {tool.name for tool in tools_for(student)} == {tool.name for tool in STUDENT_TOOLS}
+    assert {tool.name for tool in tools_for(None)} == {tool.name for tool in STUDENT_TOOLS}
+    assert {tool.name for tool in tools_for(staff)} == {
+        "search_activities",
+        "list_my_advisees",
+        "get_advisee_progress",
+    }
 
 
 @pytest.mark.parametrize("tool", TOOLS, ids=lambda tool: tool.name)

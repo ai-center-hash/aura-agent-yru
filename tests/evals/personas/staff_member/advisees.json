@@ -1,0 +1,64 @@
+{
+  "data": [
+    {
+      "id": 960001,
+      "username": "406600201",
+      "name": "นายกิตติ ใจดีสมมติ",
+      "fname": "นายกิตติ",
+      "lname": "ใจดีสมมติ",
+      "program": "วิทยาศาสตรบัณฑิต วิทยาการคอมพิวเตอร์ (สมมติ)",
+      "student_status": "normal",
+      "advisor_type_ref_id": "990001",
+      "advisor_username": "staff.test",
+      "activity_summary": {
+        "passed": 2,
+        "total": 4
+      }
+    },
+    {
+      "id": 960002,
+      "username": "406600202",
+      "name": "นางสาวดารา ครบเกณฑ์สมมติ",
+      "fname": "นางสาวดารา",
+      "lname": "ครบเกณฑ์สมมติ",
+      "program": "วิทยาศาสตรบัณฑิต วิทยาการคอมพิวเตอร์ (สมมติ)",
+      "student_status": "normal",
+      "advisor_type_ref_id": "990001",
+      "advisor_username": "staff.test",
+      "activity_summary": {
+        "passed": 4,
+        "total": 4
+      }
+    },
+    {
+      "id": 960003,
+      "username": "406600203",
+      "name": "นายปรีชา เทียบโอนสมมติ",
+      "fname": "นายปรีชา",
+      "lname": "เทียบโอนสมมติ",
+      "program": "วิทยาศาสตรบัณฑิต วิทยาการคอมพิวเตอร์ (สมมติ)",
+      "student_status": "transfer",
+      "advisor_type_ref_id": "990001",
+      "advisor_username": "staff.test",
+      "activity_summary": {
+        "passed": 2,
+        "total": 4
+      }
+    },
+    {
+      "id": 960004,
+      "username": "406600204",
+      "name": "นางสาวมาลี ไม่มีกรอบสมมติ",
+      "fname": "นางสาวมาลี",
+      "lname": "ไม่มีกรอบสมมติ",
+      "program": "วิทยาศาสตรบัณฑิต วิทยาการคอมพิวเตอร์ (สมมติ)",
+      "student_status": "normal",
+      "advisor_type_ref_id": "990001",
+      "advisor_username": "staff.test",
+      "activity_summary": {
+        "passed": 0,
+        "total": 0
+      }
+    }
+  ]
+}

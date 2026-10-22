@@ -7,7 +7,7 @@
 from datetime import date, datetime, tzinfo
 from zoneinfo import ZoneInfo
 
-from ..data.schemas import Schedule
+from ..data.schemas import Advisee, Schedule
 from .models import (
     MANDATORY_KEYWORD,
     EligibleSchedule,
@@ -134,6 +134,64 @@ def format_no_frame(api_message: str | None = None) -> str:
     return "\n".join(lines)
 
 
+# ---- นักศึกษาในที่ปรึกษา (อาจารย์) ----
+
+MAX_ADVISEES = 40
+ADVISEES_TITLE = "นักศึกษาในที่ปรึกษา"
+
+
+def format_advisees(advisees: list[Advisee], *, only_incomplete: bool = False) -> str:
+    """รายชื่อนักศึกษาในที่ปรึกษา เรียงจากคนที่ยังขาดมากที่สุด (ไม่มีอีเมล ที่อยู่ เบอร์โทร)"""
+    if not advisees:
+        return f"[{ADVISEES_TITLE}] ไม่พบรายชื่อนักศึกษาในที่ปรึกษาของผู้ใช้ในระบบกิจกรรม"
+
+    complete = sum(1 for item in advisees if item.activity_summary.is_complete)
+    no_frame = sum(1 for item in advisees if not item.activity_summary.has_frame)
+    header = (
+        f"[{ADVISEES_TITLE}] ทั้งหมด {len(advisees)} คน | ครบตามเกณฑ์ {complete} คน"
+        f" | ยังไม่ครบ {len(advisees) - complete - no_frame} คน"
+    )
+    if no_frame:
+        header += f" | ยังไม่มีกรอบกิจกรรม {no_frame} คน"
+
+    rows = sorted(
+        advisees,
+        key=lambda item: (
+            item.activity_summary.is_complete,
+            not item.activity_summary.has_frame,
+            -item.activity_summary.remaining,
+            item.username,
+        ),
+    )
+    if only_incomplete:
+        rows = [item for item in rows if not item.activity_summary.is_complete]
+        if not rows:
+            return header + "\nทุกคนครบตามเกณฑ์แล้ว"
+
+    shown = rows[:MAX_ADVISEES]
+    lines = [header]
+    if len(shown) < len(rows):
+        lines.append(f"(แสดง {len(shown)} จาก {len(rows)} คน)")
+    for index, item in enumerate(shown, start=1):
+        lines.append(f"{index}. {item.username} {item.display_name} | {_advisee_status(item)}")
+    return "\n".join(lines)
+
+
+def format_advisee_progress(advisee: Advisee, report: ProgressReport) -> str:
+    """ความคืบหน้าเต็มของนักศึกษา 1 คนในที่ปรึกษา"""
+    header = f"[ความคืบหน้าของนักศึกษาในที่ปรึกษา] {advisee.username} {advisee.display_name}"
+    return f"{header}\n{format_progress(report)}"
+
+
+def _advisee_status(item: Advisee) -> str:
+    progress = item.activity_summary
+    if not progress.has_frame:
+        return "ยังไม่มีกรอบกิจกรรม"
+    if progress.is_complete:
+        return f"ผ่านเกณฑ์ {progress.passed}/{progress.total} · ครบแล้ว"
+    return f"ผ่านเกณฑ์ {progress.passed}/{progress.total} · ยังไม่ผ่าน {progress.remaining}"
+
+
 def format_not_student(unit: str | None = None) -> str:
     """ใช้แทน `format_progress` เมื่อผู้ใช้เป็นบุคลากร (อาจารย์ เจ้าหน้าที่ แอดมิน)"""
     where = f" สังกัด {unit}" if unit else ""
@@ -142,7 +200,8 @@ def format_not_student(unit: str | None = None) -> str:
         "จึงไม่มีความคืบหน้ากิจกรรม ประวัติการลงทะเบียน หรือกิจกรรมที่แนะนำให้ตัวเอง",
         "ถ้าถูกถามเรื่องเหล่านี้ ให้บอกสุภาพว่าส่วนนี้ใช้ได้เฉพาะนักศึกษา",
         "ส่วนการค้นหารอบกิจกรรมใช้ได้ตามปกติ (เห็นทุกรอบที่ยังรับสมัคร ไม่ได้คัดตามคุณสมบัติผู้สมัคร)",
-        "บุคลากรก็ดูข้อมูลของนักศึกษาคนอื่นไม่ได้ ถ้าถูกขอ ให้ปฏิเสธเหมือนกรณีนักศึกษา",
+        "ถ้าเป็นอาจารย์ที่ปรึกษา ดูรายชื่อและความคืบหน้าของนักศึกษาในที่ปรึกษาของตัวเองได้ผ่านเครื่องมือ",
+        "นักศึกษาที่ไม่ได้อยู่ในที่ปรึกษา ดูไม่ได้ ถ้าถูกขอ ให้ปฏิเสธสุภาพ",
     ]
     return "\n".join(lines)
 

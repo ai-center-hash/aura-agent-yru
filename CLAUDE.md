@@ -30,11 +30,12 @@ sudo bash /opt/aura-agent/deploy/install.sh             # (บน yru-ai) deploy
 - `processing/` เป็น pure function ห้ามมี I/O และห้ามเรียก `datetime.now()` (รับ `today` เป็น argument)
 - ชื่อในโค้ดใช้ภาษาอังกฤษ ข้อความที่ผู้ใช้เห็น docstring ของ tool และเอกสารใช้ภาษาไทย
 - async ทั้งหมด (`httpx.AsyncClient`, `AsyncSqliteSaver`)
-- แก้ `prompts/system_prompt.th.md` หรือ docstring ของ tool แล้วต้องรัน eval
+- แก้ `prompts/system_prompt*.th.md` หรือ docstring ของ tool แล้วต้องรัน eval
 
 ## กฎความปลอดภัย (ห้ามละเมิด)
 
-- ตัวตนมาจาก token ของผู้ใช้เท่านั้น ไม่ใช่จากข้อความที่พิมพ์ · โหมด `passport` (ค่าเริ่มต้น): YRU Passport `/oidc/userinfo` → รหัสนักศึกษา → `summary/user/{รหัส}` · โหมด `activity_me`: `summary/me` · **ห้ามมี tool ที่รับรหัสนักศึกษาหรือ user_id เป็น parameter**
+- ตัวตนมาจาก token ของผู้ใช้เท่านั้น ไม่ใช่จากข้อความที่พิมพ์ · โหมด `passport` (ค่าเริ่มต้น): YRU Passport `/oidc/userinfo` → รหัสนักศึกษา → `summary/user/{รหัส}` · โหมด `activity_me`: `summary/me` · **ห้ามมี tool ที่รับรหัสนักศึกษาหรือ user_id เป็น parameter** ยกเว้น `get_advisee_progress` ของอาจารย์ ซึ่ง `ActClient.get_advisee_summary` ตรวจทุกครั้งว่ารหัสอยู่ในรายชื่อที่ปรึกษาของเจ้าของ token (`advisor_type_ref_id` = `user_type_id` ของ Passport) ห้ามเพิ่ม tool ที่รับรหัสโดยไม่มีการตรวจแบบนี้
+- บุคลากรใช้ `prompts/system_prompt_staff.th.md` และชุด tool `STAFF_TOOLS` แยกจากนักศึกษา (`tools_for`) · ข้อมูลจาก `/v1/auth/users` เก็บเฉพาะฟิลด์ใน `Advisee` ห้ามเพิ่มอีเมล/เบอร์โทร/ที่อยู่/`cid`
 - **token ของ Passport ใช้กับ Passport เท่านั้น ห้ามส่งต่อให้ Activity API** (โหมด passport เรียกเส้น public โดยไม่แนบ token)
 - JWT ส่งผ่าน `config["configurable"]["jwt"]` **ห้ามใส่ใน state, log หรือ cache key** (ใช้ hash แทน)
 - thread_id ที่เก็บจริงคือ `f"{subject}:{thread_id}"` โดย `subject` มาจาก `ActClient.get_subject()` (โหมด passport = `passport:{sub}`)
