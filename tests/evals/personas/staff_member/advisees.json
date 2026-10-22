@@ -11,8 +11,8 @@
       "advisor_type_ref_id": "990001",
       "advisor_username": "staff.test",
       "activity_summary": {
-        "passed": 2,
-        "total": 4
+        "passed": 4,
+        "total": 8
       }
     },
     {
@@ -26,8 +26,8 @@
       "advisor_type_ref_id": "990001",
       "advisor_username": "staff.test",
       "activity_summary": {
-        "passed": 4,
-        "total": 4
+        "passed": 8,
+        "total": 8
       }
     },
     {
@@ -41,8 +41,8 @@
       "advisor_type_ref_id": "990001",
       "advisor_username": "staff.test",
       "activity_summary": {
-        "passed": 2,
-        "total": 4
+        "passed": 3,
+        "total": 5
       }
     },
     {

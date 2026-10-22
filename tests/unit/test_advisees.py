@@ -201,7 +201,7 @@ def test_advisee_list_puts_incomplete_first():
         "[นักศึกษาในที่ปรึกษา] ทั้งหมด 4 คน | ครบตามเกณฑ์ 1 คน | ยังไม่ครบ 2 คน | ยังไม่มีกรอบกิจกรรม 1 คน"
     )
     assert lines[1].startswith("1. 406600102 ")  # ขาด 5 มากที่สุด
-    assert "ผ่านเกณฑ์ 9/14 · ยังไม่ผ่าน 5" in lines[1]
+    assert "ทำตามเกณฑ์แล้ว 9/14 กิจกรรม · ยังขาด 5 กิจกรรม" in lines[1]
     assert lines[2].startswith("2. 406600103 ")
     assert "ยังไม่มีกรอบกิจกรรม" in lines[3]
     assert "ครบแล้ว" in lines[4]

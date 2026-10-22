@@ -187,9 +187,10 @@ def _advisee_status(item: Advisee) -> str:
     progress = item.activity_summary
     if not progress.has_frame:
         return "ยังไม่มีกรอบกิจกรรม"
+    done = f"ทำตามเกณฑ์แล้ว {progress.passed}/{progress.total} กิจกรรม"
     if progress.is_complete:
-        return f"ผ่านเกณฑ์ {progress.passed}/{progress.total} · ครบแล้ว"
-    return f"ผ่านเกณฑ์ {progress.passed}/{progress.total} · ยังไม่ผ่าน {progress.remaining}"
+        return f"{done} · ครบแล้ว"
+    return f"{done} · ยังขาด {progress.remaining} กิจกรรม"
 
 
 def format_not_student(unit: str | None = None) -> str:
