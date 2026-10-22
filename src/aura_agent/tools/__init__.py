@@ -4,13 +4,14 @@ tool ทุกตัว
 - คืน **string เสมอ** (ถ้าเป็น error ที่ผู้ใช้แก้ไขได้ ให้คืนข้อความอธิบาย)
 - ไม่รับรหัสนักศึกษาหรือ user_id เป็น parameter — ตัวตนมาจาก `state["student"]` และ JWT จาก config
   (ข้อยกเว้นเดียว: `get_advisee_progress` ของอาจารย์ ซึ่งตรวจรหัสกับรายชื่อที่ปรึกษาทุกครั้ง ดู advisees.py)
-- LLM เห็นชุด tool ตามบทบาท (`tools_for`) นักศึกษาไม่เห็น tool ของอาจารย์ และกลับกัน
+- ผู้ใช้ทุกบทบาท (นักศึกษา บุคลากร ผู้ใช้ที่ไม่ได้เข้าสู่ระบบ) ใช้ tool ชุดเดียวกัน
+  tool ตัดสินเองว่าผู้ใช้คนนั้นดูข้อมูลส่วนตัวได้ไหม (`context.personal_data_refusal`, advisees.py)
 - `TokenExpired` / `UpstreamUnavailable` ปล่อยให้ขึ้นไปจัดการที่ชั้น API
 """
 
 from ..processing import StudentProfile
 from .advisees import get_advisee_progress, list_my_advisees
-from .context import NO_STUDENT_MESSAGE, jwt_from, student_from
+from .context import NO_STUDENT_MESSAGE, jwt_from, optional_jwt_from, student_from
 from .progress import get_my_progress
 from .recommend import recommend_activities
 from .registrations import get_my_registrations
@@ -22,20 +23,16 @@ STUDENT_TOOLS = [
     recommend_activities,
     get_my_registrations,
 ]
-STAFF_TOOLS = [
-    search_activities,
+ADVISOR_TOOLS = [
     list_my_advisees,
     get_advisee_progress,
 ]
-# ทุกตัวที่ ToolNode รันได้ (LLM เห็นแค่ชุดตามบทบาท แต่ tool ก็เช็คบทบาทซ้ำเอง)
-TOOLS = [*STUDENT_TOOLS, list_my_advisees, get_advisee_progress]
+TOOLS = [*STUDENT_TOOLS, *ADVISOR_TOOLS]
 
 
 def tools_for(student: StudentProfile | None) -> list:
-    """ชุด tool ที่ bind ให้ LLM ตามบทบาทของผู้ใช้ (ไม่รู้บทบาท = ชุดนักศึกษา ซึ่งไม่มีข้อมูลคนอื่น)"""
-    if student is not None and not student.is_student:
-        return STAFF_TOOLS
-    return STUDENT_TOOLS
+    """ชุด tool ที่ bind ให้ LLM — ทุกบทบาทได้ชุดเดียวกัน (tool เช็คสิทธิ์เอง)"""
+    return TOOLS
 
 
 # ข้อความสถานะที่ API ส่งเป็น `event: status` ตอนเริ่มเรียก tool (docs/01-api-contract.md)
@@ -50,7 +47,7 @@ TOOL_STATUS = {
 
 __all__ = [
     "NO_STUDENT_MESSAGE",
-    "STAFF_TOOLS",
+    "ADVISOR_TOOLS",
     "STUDENT_TOOLS",
     "TOOLS",
     "TOOL_STATUS",
@@ -60,6 +57,7 @@ __all__ = [
     "get_my_progress",
     "get_my_registrations",
     "jwt_from",
+    "optional_jwt_from",
     "recommend_activities",
     "search_activities",
     "student_from",

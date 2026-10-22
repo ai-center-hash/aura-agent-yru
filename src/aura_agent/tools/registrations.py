@@ -8,7 +8,7 @@ from langgraph.prebuilt import InjectedState
 
 from ..data import get_act_client
 from ..processing import format_registrations, map_registrations
-from .context import NO_STUDENT_MESSAGE, NOT_STUDENT_MESSAGE, jwt_from, student_from
+from .context import jwt_from, personal_data_refusal, student_from
 
 NO_FRAME_MESSAGE = (
     "ดูประวัติการลงทะเบียนไม่ได้ เพราะระบบกิจกรรมยังไม่มีกรอบกิจกรรมสำหรับนักศึกษาคนนี้"
@@ -33,11 +33,8 @@ async def get_my_registrations(
     "completed" = เข้าร่วมสมบูรณ์, "cancelled" = ยกเลิก, ไม่ระบุ = ทุกสถานะ
     """
     student = student_from(state)
-    if student is None:
-        return NO_STUDENT_MESSAGE
-
-    if not student.is_student:
-        return NOT_STUDENT_MESSAGE.format(subject="ประวัติการลงทะเบียน")
+    if refusal := personal_data_refusal(student, "ประวัติการลงทะเบียน"):
+        return refusal
     if student.id is None:
         return NO_FRAME_MESSAGE
 

@@ -45,6 +45,11 @@ class Persona:
         return self.summary is not None
 
     @property
+    def is_anonymous(self) -> bool:
+        """ไม่ได้เข้าสู่ระบบ: eval ส่ง jwt=None เหมือน backend ไม่ส่ง Authorization"""
+        return self.summary is None and self.identity is None
+
+    @property
     def user_id(self) -> int | None:
         return self.summary.user.id if self.summary is not None else None
 
@@ -53,7 +58,8 @@ class Persona:
         """id ที่ใช้แยกประวัติแชท (เหมือน `ActClient.get_subject`)"""
         if self.summary is not None:
             return str(self.summary.user.id)
-        assert self.identity is not None
+        if self.identity is None:
+            return "anonymous"
         return f"passport:{self.identity.sub}"
 
 
@@ -63,6 +69,8 @@ def load_persona(name: str, directory: Path | None = None) -> Persona:
         raise FileNotFoundError(f"ไม่พบ persona: {base}")
 
     schedules = [Schedule.model_validate(row) for row in _read(base / "schedules.json")["data"]]
+    if (base / "anonymous.json").exists():
+        return Persona(name=name, summary=None, schedules=schedules, registrations=[])
     if (base / "identity.json").exists():
         identity = PassportUser.model_validate(_read(base / "identity.json"))
         advisees: list[Advisee] = []

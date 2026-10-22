@@ -8,7 +8,7 @@
 
 | Header | ค่า | หมายเหตุ |
 |---|---|---|
-| `Authorization` | `Bearer <access token จาก YRU Passport>` | ส่งต่อจาก frontend โดยไม่แก้ไข · AURA ถาม Passport ว่าเป็นใคร และ**ไม่ส่ง token นี้ต่อให้ระบบอื่น** |
+| `Authorization` | `Bearer <access token จาก YRU Passport>` | **ไม่บังคับ** (ตั้งแต่ 2026-10-22) · ส่งต่อจาก frontend โดยไม่แก้ไข · AURA ถาม Passport ว่าเป็นใคร และ**ไม่ส่ง token นี้ต่อให้ระบบอื่น** · ไม่ส่ง = ผู้ใช้ทั่วไป ค้นหากิจกรรมได้อย่างเดียว · ส่งมาแต่รูปแบบผิด = 401 |
 | `X-Service-Key` | key ที่ตกลงกันใน `.env` | AURA-AGENT จะตอบเฉพาะ request ที่มี key นี้ |
 
 ## `POST /v1/chat`: ถามคำถาม (SSE stream)
@@ -48,7 +48,7 @@ data: {"thread_id": "c1f0a7e2-...", "tools_used": ["get_my_progress"], "latency_
 
 | HTTP / code | สาเหตุ | สิ่งที่ frontend ควรทำ |
 |---|---|---|
-| `401` (HTTP) | `X-Service-Key` ผิดหรือไม่ได้ส่ง | เป็นปัญหาฝั่ง backend |
+| `401` (HTTP) | `X-Service-Key` ผิดหรือไม่ได้ส่ง หรือ `Authorization` ไม่ใช่รูปแบบ `Bearer <token>` | เป็นปัญหาฝั่ง backend |
 | `422` (HTTP) | body ไม่ถูกรูปแบบ | ตรวจ request |
 | `TOKEN_EXPIRED` | Passport (หรือ Activity API) ตอบ 401 | ให้ผู้ใช้ login ใหม่ |
 | `UPSTREAM_UNAVAILABLE` | เรียก Activity API ไม่ได้ หรือ timeout | แสดงว่า "ระบบกิจกรรมไม่พร้อมใช้งานชั่วคราว" |
@@ -76,3 +76,16 @@ AURA หาว่าใครเป็นที่ปรึกษาของใ
 |---|---|---|
 | `GET` | `/v1/health` | `{"status":"ok","ollama":"ok","activity_api":"ok"}` (ไม่ต้องใช้ JWT) |
 | `DELETE` | `/v1/chat/{thread_id}` | ลบประวัติแชทของ thread นี้ (ลบได้เฉพาะของตัวเอง) |
+
+## ผู้ใช้ทุกบทบาทถามได้เท่ากัน (2026-10-22)
+
+AURA ไม่ตัดสินว่าใครเข้าถึงบอทได้ — **backend เป็นผู้คัด** · ทุกคำถามที่ส่งเข้ามาใช้ prompt และเครื่องมือชุดเดียวกัน
+สิ่งที่ AURA ยังจำกัดเองคือ**ข้อมูลส่วนตัว** ซึ่งขึ้นกับ token ที่ส่งมา
+
+| token ที่ส่งมา | ข้อมูลส่วนตัวที่ตอบได้ |
+|---|---|
+| นักศึกษา | ของตัวเอง (ความคืบหน้า ประวัติ คำแนะนำ) |
+| บุคลากร | นักศึกษาในที่ปรึกษาของตัวเอง (ถ้ามี) |
+| ไม่ส่ง | ไม่มี — ค้นหารอบกิจกรรมได้อย่างเดียว |
+
+รายละเอียดดู [04-use-cases.md](04-use-cases.md)

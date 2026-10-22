@@ -28,8 +28,8 @@ def schema_properties(tool) -> set[str]:
 # ---- get_my_progress ----
 
 
-async def test_get_my_progress(act_client, tool_config):
-    text = await get_my_progress.ainvoke({}, tool_config)
+async def test_get_my_progress(act_client, tool_config, student):
+    text = await get_my_progress.ainvoke({"state": {"student": student}}, tool_config)
 
     assert text.startswith("[ความคืบหน้า]")
     assert "[ยังขาด]" in text
@@ -37,9 +37,9 @@ async def test_get_my_progress(act_client, tool_config):
     assert act_client.last("get_my_summary")["jwt"] == tool_config["configurable"]["jwt"]
 
 
-async def test_tool_without_jwt_raises(act_client):
+async def test_tool_without_jwt_raises(act_client, student):
     with pytest.raises(ValueError, match="jwt"):
-        await get_my_progress.ainvoke({}, {"configurable": {}})
+        await get_my_progress.ainvoke({"state": {"student": student}}, {"configurable": {}})
 
 
 # ---- search_activities ----
@@ -214,17 +214,18 @@ def test_only_the_advisor_tool_takes_a_student_code():
     assert not any("student_code" in schema_properties(tool) for tool in STUDENT_TOOLS)
 
 
-def test_role_decides_which_tools_the_llm_sees():
-    staff = StudentProfile(id=None, name="อาจารย์", is_student=False)
-    student = StudentProfile(id=1, name="นักศึกษา")
+def test_every_role_sees_the_same_tools():
+    """ตัดสิน 2026-10-22: ทุกบทบาทถามได้เท่ากัน tool ตัดสินสิทธิ์ดูข้อมูลเอง"""
+    roles = [
+        StudentProfile(id=1, name="นักศึกษา"),
+        StudentProfile(id=None, name="อาจารย์", is_student=False),
+        StudentProfile.anonymous(),
+        None,
+    ]
 
-    assert {tool.name for tool in tools_for(student)} == {tool.name for tool in STUDENT_TOOLS}
-    assert {tool.name for tool in tools_for(None)} == {tool.name for tool in STUDENT_TOOLS}
-    assert {tool.name for tool in tools_for(staff)} == {
-        "search_activities",
-        "list_my_advisees",
-        "get_advisee_progress",
-    }
+    names = [{tool.name for tool in tools_for(role)} for role in roles]
+
+    assert all(seen == {tool.name for tool in TOOLS} for seen in names)
 
 
 @pytest.mark.parametrize("tool", TOOLS, ids=lambda tool: tool.name)

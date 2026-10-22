@@ -159,6 +159,13 @@ AURA ไม่ใช้ `/auth/users` และ `/act/activities` และใ�
 - **ข้อมูลสาขาของอาจารย์:** record ของอาจารย์ `type="teacher"`, `program=null`, `department_id=60` (ตรงกับคณะใน Passport), `work_department_id=929` (ยังไม่รู้ว่าคืออะไร) → กติกา "อาจารย์ดูนักศึกษาทั้งสาขา 4 ชั้นปี" ยังทำไม่ได้จนกว่าจะรู้ว่า 929 แมปกับสาขาไหน
 - **ยังไม่ได้ตัดสินใจ:** ใช้เส้นนี้ทำขั้นที่ 2 หรือรอเจ้าของ API ทำเส้นที่ตรวจสิทธิ์จาก token ของอาจารย์ (ดูคำตอบใน session)
 
+### ทุกบทบาทถามได้เท่ากัน + ไม่บังคับ token · 2026-10-22
+- **ตัดสินใจ (ผู้ใช้):** AURA รับคำถาม หาคำตอบ ตอบกลับ · backend คัดว่าใครเข้าถึงได้ · ทุกบทบาทใช้ prompt และ tool ชุดเดียวกัน แต่**ข้อมูลส่วนตัวยังจำกัด** (นักศึกษา = ของตัวเอง, อาจารย์ = นักศึกษาในที่ปรึกษา) · token ไม่บังคับ · YRU Nexus ยังบังคับ login Passport เหมือนเดิม (ไม่มี backend คั่น)
+- **ทำแล้ว:** `Authorization` ไม่บังคับ (`OptionalJwt`; ส่งมาแต่ผิดรูปแบบยัง 401) · ไม่มี token → `StudentProfile.anonymous()` + `format_anonymous()` ไม่เรียก Passport/Activity API, subject `anonymous` · tool ทุกตัว bind ให้ทุกบทบาท (`tools_for` คืน `TOOLS`) และเช็คสิทธิ์เองผ่าน `personal_data_refusal` / advisees.py · ค้นหากิจกรรมของผู้ใช้ทั่วไป = ทุกรอบที่ยังรับสมัคร · ลบ `system_prompt_staff.th.md` เหลือ prompt เดียว โดย**กฎข้อ 4 และตัวอย่างการปฏิเสธเป็นตัวแปร** `{privacy_rule}` `{privacy_example}` ตามบทบาท (ของนักศึกษาคงข้อความเดิมทุกตัวอักษร มี test กันไว้) · persona `anonymous` + eval 3 ข้อ (รวม 59) · แก้เกณฑ์ `safety-01` (บันทึกใน dataset)
+- **บทเรียน:** รวม prompt รอบแรก อาจารย์ปฏิเสธเองโดยไม่เรียกเครื่องมือ เพราะกฎข้อ 4 + ตัวอย่าง "ขอดูรหัสคนอื่น → ปฏิเสธ" ของนักศึกษามีน้ำหนักมาก → แยกเฉพาะกฎข้อ 4/ตัวอย่างเป็นตัวแปรตามบทบาทแก้ได้
+- **ผล:** pytest **425 passed** · eval 59 ข้อ → ผ่านทุกเกณฑ์ tool 95% · fact 100% · safety 100% · กุข้อมูล 0 · ข้อบุคลากร/อาจารย์/ผู้ใช้ทั่วไป 14 ข้อผ่าน 2/2 รอบ · ข้อที่ตก (`progress-05`, `recommend-02`, `recommend-03`) เป็นการเรียก tool อ่านเพิ่ม ตกสลับกันระหว่างรอบมาตั้งแต่ก่อนรวม
+- **ยังไม่ได้ทำ:** deploy (ต้อง push)
+
 ### AURA เป็นโมเดลใน YRU Nexus (Open WebUI Pipe) · 2026-10-22
 - **ทำแล้ว:** `integrations/openwebui/aura_pipe.py` (Pipe Function: ส่งข้อความล่าสุด + `chat_id` + `__oauth_token__["access_token"]` ของ Passport + `X-Service-Key` ไป `/v1/chat` แล้วแปลง SSE เป็นข้อความ/สถานะ · งานเบื้องหลังของ Open WebUI (ตั้งชื่อ/แท็ก/คำถามต่อ) ไม่ส่งไป AURA · บัญชีที่ไม่ได้ login ด้วย Passport ได้ข้อความให้ login ใหม่) · `tests/unit/test_openwebui_pipe.py` 13 ข้อ · คู่มือ `docs/05-openwebui-nexus.md`
 - **ข้อมูล Nexus:** Open WebUI fork 0.10.2 (`D:\All-Source-Code\RAG-8005`) container `open-webui-4000` บน 10.20.41.108 · มี provider `yru_passport` ในตัว (env `YRU_PASSPORT_*`) และเก็บ token ใน OAuth session แล้วส่งให้ Function เป็น `__oauth_token__` · มี `httpx`/`pydantic` อยู่แล้ว

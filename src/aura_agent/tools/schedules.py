@@ -10,7 +10,7 @@ from langgraph.prebuilt import InjectedState
 from .. import clock
 from ..data import get_act_client
 from ..processing import filter_eligible, filter_open, format_schedules
-from .context import BAD_DATE_MESSAGE, NO_STUDENT_MESSAGE, jwt_from, student_from
+from .context import BAD_DATE_MESSAGE, NO_STUDENT_MESSAGE, optional_jwt_from, student_from
 
 
 @tool
@@ -46,15 +46,16 @@ async def search_activities(
     except ValueError as error:
         return str(error)
 
+    # รอบกิจกรรมเป็นข้อมูลสาธารณะ ผู้ใช้ที่ไม่ได้เข้าสู่ระบบก็ค้นได้ (ส่ง "" แทน token)
     schedules = await get_act_client().get_schedules(
-        jwt_from(config),
+        optional_jwt_from(config) or "",
         phase=phase,
         date_from=activity_from,
         date_to=activity_to,
         search=keyword,
     )
     if not student.is_student:
-        # บุคลากรไม่ได้สมัครเอง จึงแสดงทุกรอบที่ยังรับสมัคร พร้อมป้ายรอบที่จำกัดกลุ่ม
+        # บุคลากร/ผู้ใช้ทั่วไปไม่ได้สมัครเอง (หรือไม่รู้คุณสมบัติ) จึงแสดงทุกรอบที่ยังรับสมัคร
         return format_schedules(filter_open(schedules, clock.today()), for_staff=True)
     eligible = filter_eligible(schedules, student, clock.today())
     return format_schedules(eligible)

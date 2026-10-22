@@ -1,0 +1,3 @@
+{
+  "note": "ผู้ใช้ที่ไม่ได้เข้าสู่ระบบ (ไม่ส่ง Authorization) eval ส่ง jwt=None"
+}

@@ -12,11 +12,12 @@ from ..data import NoActivityFrame, NotAStudent, get_act_client
 from ..processing import (
     StudentProfile,
     analyze_gaps,
+    format_anonymous,
     format_no_frame,
     format_not_student,
     format_progress,
 )
-from ..tools import TOOLS, jwt_from, tools_for
+from ..tools import TOOLS, optional_jwt_from, tools_for
 from .errors import LLM_ERRORS, LLMUnavailable
 from .llm import get_llm
 from .prompts import render_system_prompt
@@ -37,8 +38,18 @@ async def load_student(state: AgentState, config: RunnableConfig) -> dict[str, A
         if now - loaded_at < STUDENT_TTL_S:
             return {"tool_rounds": 0}
 
+    jwt = optional_jwt_from(config)
+    if jwt is None:
+        # ไม่ได้ส่ง token มา: ไม่เรียก Passport/Activity API เลย
+        return {
+            "student": StudentProfile.anonymous(),
+            "progress_text": format_anonymous(),
+            "loaded_at": now,
+            "tool_rounds": 0,
+        }
+
     try:
-        summary = await get_act_client().get_my_summary(jwt_from(config))
+        summary = await get_act_client().get_my_summary(jwt)
     except NoActivityFrame as missing:
         # ยังไม่มีกรอบกิจกรรม: รู้ตัวตนจาก Passport แต่ไม่มีความคืบหน้าให้ดู ยังค้นหากิจกรรมได้
         identity = missing.identity

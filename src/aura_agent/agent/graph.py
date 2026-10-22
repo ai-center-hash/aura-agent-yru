@@ -29,6 +29,6 @@ def thread_key(user_id: int | str, thread_id: str) -> str:
     return f"{user_id}:{thread_id}"
 
 
-def run_config(*, user_id: int | str, thread_id: str, jwt: str) -> RunnableConfig:
-    """config สำหรับเรียก graph (JWT อยู่ใน config เท่านั้น ไม่เข้า state)"""
+def run_config(*, user_id: int | str, thread_id: str, jwt: str | None) -> RunnableConfig:
+    """config สำหรับเรียก graph (JWT อยู่ใน config เท่านั้น ไม่เข้า state) · None = ไม่ได้เข้าสู่ระบบ"""
     return {"configurable": {"thread_id": thread_key(user_id, thread_id), "jwt": jwt}}

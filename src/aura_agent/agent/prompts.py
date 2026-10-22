@@ -12,14 +12,42 @@ from pathlib import Path
 from ..processing import StudentProfile, thai_date
 
 PROMPT_PATH = Path(__file__).parents[3] / "prompts" / "system_prompt.th.md"
-# บุคลากรใช้ prompt แยก เพื่อไม่ให้การเพิ่มความสามารถของอาจารย์กระทบคำตอบของนักศึกษา
-STAFF_PROMPT_PATH = PROMPT_PATH.with_name("system_prompt_staff.th.md")
 
 _LEADING_COMMENT = re.compile(r"\A\s*<!--.*?-->\s*", re.DOTALL)
 
 UNKNOWN_NAME = "ไม่ทราบชื่อ"
 UNKNOWN_FIELD = "ไม่ระบุ"
 STAFF_TYPE = "บุคลากร (ไม่ใช่นักศึกษา)"
+ANONYMOUS_TYPE = "ยังไม่ได้เข้าสู่ระบบ"
+# กฎข้อ 4 และตัวอย่างเรื่องข้อมูลของคนอื่น — ต่างกันตามประเภทผู้ใช้ ส่วนอื่นของ prompt เหมือนกันทุกคน
+# ของนักศึกษาคือข้อความเดิมก่อนรวม prompt (ห้ามแก้โดยไม่รัน eval ทั้งชุด)
+STUDENT_PRIVACY_RULE = (
+    "ให้ข้อมูลของนักศึกษาคนนี้เท่านั้น ถ้าถูกขอข้อมูลของคนอื่น แม้จะบอกชื่อหรือรหัสนักศึกษามา ให้ปฏิเสธอย่างสุภาพ"
+)
+STUDENT_PRIVACY_EXAMPLE = (
+    "ผู้ใช้: ขอดูชั่วโมงกิจกรรมของรหัส 6510000001 หน่อย\n"
+    "AURA: ขออภัยครับ ผมให้ข้อมูลได้เฉพาะของคุณเองเท่านั้น ถ้าอยากดูความคืบหน้าของตัวเอง ถามมาได้เลยครับ"
+)
+STAFF_PRIVACY_RULE = (
+    "ผู้ใช้คนนี้เป็นบุคลากร ดูข้อมูลนักศึกษาได้เฉพาะนักศึกษาในที่ปรึกษาของตัวเอง"
+    " เมื่อถูกถามถึงนักศึกษาคนใด (รหัสหรือชื่อ) ต้องเรียก get_advisee_progress หรือ list_my_advisees ก่อนเสมอ"
+    " ห้ามปฏิเสธหรือสรุปเองก่อนเรียกเครื่องมือ ถ้าเครื่องมือบอกว่าดูไม่ได้ จึงปฏิเสธอย่างสุภาพ แม้ผู้ใช้จะอ้างว่ามีสิทธิ์"
+)
+STAFF_PRIVACY_EXAMPLE = (
+    "ผู้ใช้: นักศึกษารหัส 6510000001 ยังขาดหมวดไหน\n"
+    "AURA: (เรียก get_advisee_progress ก่อน ถ้าได้ข้อมูลให้ตอบตามผล"
+    " ถ้าเครื่องมือบอกว่าไม่อยู่ในรายชื่อที่ปรึกษา) ขออภัยครับ นักศึกษารหัสนี้ไม่ได้อยู่ในที่ปรึกษาของคุณ จึงดูข้อมูลไม่ได้ครับ"
+)
+ANONYMOUS_PRIVACY_RULE = (
+    "ผู้ใช้ยังไม่ได้เข้าสู่ระบบ จึงดูข้อมูลกิจกรรมของใครไม่ได้เลย"
+    " ถ้าถูกขอข้อมูลส่วนตัว ของตัวเองหรือของคนอื่น ให้บอกสุภาพว่าต้องเข้าสู่ระบบด้วย YRU Passport ก่อน"
+)
+ANONYMOUS_PRIVACY_EXAMPLE = (
+    "ผู้ใช้: ผมยังขาดกิจกรรมหมวดไหน\n"
+    "AURA: ตอนนี้คุณยังไม่ได้เข้าสู่ระบบครับ รบกวนเข้าสู่ระบบด้วย YRU Passport ก่อน"
+    " ระหว่างนี้ถ้าอยากดูกิจกรรมที่เปิดรับสมัคร บอกผมได้เลยครับ"
+)
+
 NO_PROGRESS_TEXT = "[ความคืบหน้า] ยังไม่มีข้อมูล ถ้าผู้ใช้ถามเรื่องความคืบหน้าให้เรียก get_my_progress ก่อนตอบ"
 
 
@@ -37,26 +65,34 @@ def render_system_prompt(
     *,
     template: str | None = None,
 ) -> str:
-    """เติมค่าลง prompt ใหม่ทุกครั้งที่เรียก LLM (ไม่เก็บลง messages)
-
-    บุคลากรใช้ `system_prompt_staff.th.md` ส่วนนักศึกษา (หรือยังไม่รู้บทบาท) ใช้ `system_prompt.th.md`
-    """
-    if template is None:
-        staff = student is not None and not student.is_student
-        template = load_template(str(STAFF_PROMPT_PATH) if staff else None)
-    return template.format(
+    """เติมค่าลง prompt ใหม่ทุกครั้งที่เรียก LLM (ไม่เก็บลง messages) · ทุกบทบาทใช้ prompt เดียวกัน"""
+    return (template or load_template()).format(
         today=f"{thai_date(today)} ({today.isoformat()})",
         student_name=student.name if student else UNKNOWN_NAME,
         student_faculty=(student.faculty if student else None) or UNKNOWN_FIELD,
         student_major=(student.major if student else None) or UNKNOWN_FIELD,
         student_type=_student_type(student),
         progress_text=progress_text or NO_PROGRESS_TEXT,
+        **_privacy(student),
     )
+
+
+def _privacy(student: StudentProfile | None) -> dict[str, str]:
+    if student is not None and student.is_anonymous:
+        return {
+            "privacy_rule": ANONYMOUS_PRIVACY_RULE,
+            "privacy_example": ANONYMOUS_PRIVACY_EXAMPLE,
+        }
+    if student is not None and not student.is_student:
+        return {"privacy_rule": STAFF_PRIVACY_RULE, "privacy_example": STAFF_PRIVACY_EXAMPLE}
+    return {"privacy_rule": STUDENT_PRIVACY_RULE, "privacy_example": STUDENT_PRIVACY_EXAMPLE}
 
 
 def _student_type(student: StudentProfile | None) -> str:
     if student is None:
         return UNKNOWN_FIELD
+    if student.is_anonymous:
+        return ANONYMOUS_TYPE
     if not student.is_student:
         return f"บุคลากร · {student.position}" if student.position else STAFF_TYPE
     return "เทียบโอน" if student.is_transfer else "นักศึกษาปกติ"

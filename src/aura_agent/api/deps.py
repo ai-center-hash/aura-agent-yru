@@ -35,6 +35,16 @@ async def get_jwt(authorization: Annotated[str | None, Header()] = None) -> str:
     return jwt
 
 
+async def get_optional_jwt(authorization: Annotated[str | None, Header()] = None) -> str | None:
+    """JWT ถ้ามี · ไม่ส่ง header มาเลย = ผู้ใช้ที่ไม่ได้เข้าสู่ระบบ (ค้นหากิจกรรมได้อย่างเดียว)
+
+    ส่ง header มาแต่รูปแบบผิด ยังตอบ 401 เพื่อให้ฝั่งที่เรียกรู้ว่าส่งผิด ไม่ใช่กลายเป็นผู้ใช้ทั่วไปเงียบๆ
+    """
+    if authorization is None:
+        return None
+    return await get_jwt(authorization)
+
+
 def get_graph(request: Request) -> Any:
     """graph ที่ lifespan สร้างไว้"""
     graph = getattr(request.app.state, "graph", None)
@@ -44,5 +54,6 @@ def get_graph(request: Request) -> Any:
 
 
 Jwt = Annotated[str, Depends(get_jwt)]
+OptionalJwt = Annotated[str | None, Depends(get_optional_jwt)]
 ServiceKey = Annotated[None, Depends(check_service_key)]
 Graph = Annotated[Any, Depends(get_graph)]

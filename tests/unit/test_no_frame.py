@@ -52,8 +52,8 @@ def no_frame_student() -> StudentProfile:
 # ---- tool ----
 
 
-async def test_progress_tool_explains_missing_frame(no_frame_client, tool_config):
-    text = await get_my_progress.ainvoke({}, tool_config)
+async def test_progress_tool_explains_missing_frame(no_frame_client, tool_config, no_frame_student):
+    text = await get_my_progress.ainvoke({"state": {"student": no_frame_student}}, tool_config)
 
     assert text.startswith("[ความคืบหน้า] ยังไม่มีกรอบกิจกรรม")
     assert API_MESSAGE in text

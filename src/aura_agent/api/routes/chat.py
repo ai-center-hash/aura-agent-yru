@@ -7,7 +7,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from ...agent import thread_key
 from ...data import ActApiError, TokenExpired, get_act_client
-from ..deps import Graph, Jwt, ServiceKey
+from ..deps import Graph, Jwt, OptionalJwt, ServiceKey
 from ..schemas import ChatRequest
 from ..sse import chat_events
 
@@ -20,9 +20,12 @@ NO_CHECKPOINTER = "ระบบยังไม่พร้อมใช้งา�
 
 @router.post("/chat")
 async def chat(
-    payload: ChatRequest, graph: Graph, jwt: Jwt, _service_key: ServiceKey
+    payload: ChatRequest, graph: Graph, jwt: OptionalJwt, _service_key: ServiceKey
 ) -> EventSourceResponse:
-    """ถามคำถาม แล้ว stream คำตอบกลับเป็น SSE (HTTP ยัง 200 แม้จะมี `event: error`)"""
+    """ถามคำถาม แล้ว stream คำตอบกลับเป็น SSE (HTTP ยัง 200 แม้จะมี `event: error`)
+
+    ไม่ส่ง Authorization = ผู้ใช้ทั่วไป ค้นหากิจกรรมได้ แต่ไม่มีข้อมูลส่วนตัวของใคร
+    """
     return EventSourceResponse(
         chat_events(graph, thread_id=payload.thread_id, message=payload.message, jwt=jwt)
     )

@@ -49,8 +49,8 @@ def make_result(case: EvalCase, **overrides) -> CaseResult:
 def test_dataset_loads_with_expected_shape():
     cases = load_dataset()
 
-    assert len(cases) == 56
-    assert len({case.id for case in cases}) == 56  # id ต้องไม่ซ้ำ
+    assert len(cases) == 59
+    assert len({case.id for case in cases}) == 59  # id ต้องไม่ซ้ำ
 
 
 def test_dataset_category_counts_match_the_plan():
@@ -59,11 +59,11 @@ def test_dataset_category_counts_match_the_plan():
         counts[case.category] = counts.get(case.category, 0) + 1
 
     assert counts == {
-        "progress": 13,
-        "search": 12,
+        "progress": 14,
+        "search": 13,
         "recommend": 10,
         "history": 8,
-        "safety": 8,
+        "safety": 9,
         "advisor": 5,
     }
 
@@ -77,6 +77,7 @@ def test_dataset_uses_existing_personas():
         "completed_all",
         "realistic_with_gaps",
         "staff_member",
+        "anonymous",
     }
     for case in load_dataset():
         assert case.persona in personas, case.id
@@ -95,8 +96,9 @@ def test_every_case_checks_something():
         assert checks or case.expect_tools_any is not None, case.id
 
 
-# tool ของอาจารย์ตรวจรายชื่อที่ปรึกษาในโค้ดเอง การเรียกจึงไม่ทำให้ข้อมูลหลุด (ผลคือข้อความปฏิเสธ)
-SCOPE_CHECKED_TOOLS = {"list_my_advisees", "get_advisee_progress"}
+# tool ที่ตรวจขอบเขตในโค้ดเอง การเรียกจึงไม่ทำให้ข้อมูลของคนอื่นหลุด (ผลคือข้อความปฏิเสธ)
+# - ของอาจารย์: ตรวจรายชื่อที่ปรึกษา · get_my_progress: อ่านได้แค่ข้อมูลของเจ้าของ token
+SCOPE_CHECKED_TOOLS = {"list_my_advisees", "get_advisee_progress", "get_my_progress"}
 
 
 def test_safety_cases_expect_no_tool_call():

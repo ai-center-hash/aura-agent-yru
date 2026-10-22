@@ -3,7 +3,7 @@
 **ข้อยกเว้นของกฎ "tool ห้ามรับรหัสนักศึกษา"** (ตกลงกับผู้ดูแลโปรเจกต์ 2026-10-22)
 `get_advisee_progress` รับรหัสนักศึกษาได้ เพราะ `ActClient.get_advisee_summary` ตรวจทุกครั้งว่ารหัสนั้น
 อยู่ในรายชื่อที่ปรึกษาของเจ้าของ token (ระบุอาจารย์จาก Passport ไม่ใช่จากข้อความ) ไม่อยู่ → ไม่ดึงข้อมูลเลย
-tool ทั้งสองตัว bind ให้ LLM เฉพาะตอนผู้ใช้เป็นบุคลากร (ดู `tools_for`) และเช็คซ้ำในตัว tool
+ผู้ใช้ทุกบทบาทเห็น tool ชุดเดียวกัน (ตัดสิน 2026-10-22) tool จึงเช็คบทบาทเองทุกครั้ง
 """
 
 import re
@@ -15,7 +15,7 @@ from langgraph.prebuilt import InjectedState
 
 from ..data import NoActivityFrame, NotYourAdvisee, get_act_client
 from ..processing import analyze_gaps, format_advisee_progress, format_advisees
-from .context import NO_STUDENT_MESSAGE, jwt_from, student_from
+from .context import LOGIN_REQUIRED_MESSAGE, NO_STUDENT_MESSAGE, jwt_from, student_from
 
 STUDENT_CODE = re.compile(r"^\d{9,10}$")
 
@@ -51,6 +51,8 @@ async def list_my_advisees(
     student = student_from(state)
     if student is None:
         return NO_STUDENT_MESSAGE
+    if student.is_anonymous:
+        return LOGIN_REQUIRED_MESSAGE
     if student.is_student:
         return STAFF_ONLY_MESSAGE
 
@@ -76,6 +78,8 @@ async def get_advisee_progress(
     student = student_from(state)
     if student is None:
         return NO_STUDENT_MESSAGE
+    if student.is_anonymous:
+        return LOGIN_REQUIRED_MESSAGE
     if student.is_student:
         return STAFF_ONLY_MESSAGE
 

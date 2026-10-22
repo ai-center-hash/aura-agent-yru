@@ -178,8 +178,11 @@ class StreamTranslator:
 # ---- ตัว stream ของ POST /v1/chat ----
 
 
+ANONYMOUS_SUBJECT = "anonymous"
+
+
 async def chat_events(
-    graph: Any, *, thread_id: str, message: str, jwt: str
+    graph: Any, *, thread_id: str, message: str, jwt: str | None
 ) -> AsyncIterator[dict[str, str]]:
     """ยืนยันตัวตน → เรียก graph → ส่ง status/token/done (หรือ error แทน done)"""
     started = time.perf_counter()
@@ -187,7 +190,8 @@ async def chat_events(
 
     try:
         # ยืนยันตัวตนก่อน แล้วผูกประวัติแชทไว้กับผู้ใช้คนนี้ (ได้แม้ยังไม่มีกรอบกิจกรรม)
-        subject = await get_act_client().get_subject(jwt)
+        # ไม่มี token = ผู้ใช้ทั่วไป ไม่ถาม Passport และไม่มีข้อมูลส่วนตัว (ประวัติแชทแยกด้วย thread_id)
+        subject = await get_act_client().get_subject(jwt) if jwt else ANONYMOUS_SUBJECT
         config = run_config(user_id=subject, thread_id=thread_id, jwt=jwt)
 
         async for mode, payload in graph.astream(

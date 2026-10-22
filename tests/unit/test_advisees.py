@@ -16,7 +16,7 @@ from aura_agent.data.act_client import ADVISEES_LABEL, SUMMARY_USER_PATH, USERS_
 from aura_agent.data.passport import USERINFO_PATH
 from aura_agent.data.schemas import Advisee, PassportUser
 from aura_agent.processing import StudentProfile, format_advisees
-from aura_agent.tools import get_advisee_progress, list_my_advisees
+from aura_agent.tools import TOOLS, get_advisee_progress, list_my_advisees
 from aura_agent.tools.advisees import NOT_ADVISEE_MESSAGE, STAFF_ONLY_MESSAGE
 
 from .conftest import BASE_URL, JWT, tool_call
@@ -313,15 +313,15 @@ async def test_progress_tool_rejects_non_codes(advisor_client, tool_config, bad)
 # ---- prompt + graph ----
 
 
-def test_teacher_gets_the_staff_prompt(frozen_today):
+def test_every_role_gets_the_same_prompt_template(frozen_today):
     from aura_agent import clock
 
     staff_prompt = render_system_prompt(clock.today(), TEACHER, "[ความคืบหน้า] บุคลากร")
     student_prompt = render_system_prompt(clock.today(), StudentProfile(id=1, name="ก"), None)
 
     assert "list_my_advisees" in staff_prompt
+    assert "list_my_advisees" in student_prompt
     assert "บุคลากร · อาจารย์" in staff_prompt
-    assert "list_my_advisees" not in student_prompt
 
 
 async def test_teacher_lists_advisees_through_graph(advisor_client, frozen_today, llm):
@@ -336,7 +336,7 @@ async def test_teacher_lists_advisees_through_graph(advisor_client, frozen_today
     tool_message = next(m for m in state["messages"] if isinstance(m, ToolMessage))
     assert tool_message.content.startswith("[นักศึกษาในที่ปรึกษา]")
     bound = set(fake.calls[0]["tools"])
-    assert bound == {"search_activities", "list_my_advisees", "get_advisee_progress"}
+    assert bound == {tool.name for tool in TOOLS}
 
 
 def test_advisee_list_shows_a_large_group_in_full():
@@ -347,3 +347,16 @@ def test_advisee_list_shows_a_large_group_in_full():
 
     assert "(แสดง" not in text
     assert len(text.splitlines()) == 1 + 120
+
+
+def test_student_privacy_rule_is_unchanged(frozen_today):
+    """ข้อความกฎข้อ 4 ของนักศึกษาต้องเหมือนก่อนรวม prompt (เคยแก้แล้วคำตอบของนักศึกษาแย่ลง)"""
+    from aura_agent import clock
+
+    prompt = render_system_prompt(clock.today(), StudentProfile(id=1, name="ก"), None)
+    staff_prompt = render_system_prompt(clock.today(), TEACHER, None)
+
+    assert "4. ให้ข้อมูลของนักศึกษาคนนี้เท่านั้น ถ้าถูกขอข้อมูลของคนอื่น" in prompt
+    assert "AURA: ขออภัยครับ ผมให้ข้อมูลได้เฉพาะของคุณเองเท่านั้น" in prompt
+    assert "ห้ามปฏิเสธหรือสรุปเองก่อนเรียกเครื่องมือ" in staff_prompt
+    assert "ผมให้ข้อมูลได้เฉพาะของคุณเองเท่านั้น" not in staff_prompt

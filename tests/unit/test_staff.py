@@ -100,14 +100,14 @@ def test_not_student_text_names_the_unit():
 
     assert text.startswith("[ความคืบหน้า] ผู้ใช้คนนี้เป็นบุคลากร")
     assert "สำนักวิทยบริการ" in text
-    assert "ที่ไม่ได้อยู่ในที่ปรึกษา" in text
+    assert "ห้ามสรุปเองว่านักศึกษาไม่อยู่ในที่ปรึกษา" in text
 
 
 # ---- tool ----
 
 
-async def test_progress_tool_says_staff_has_no_progress(staff_client, tool_config):
-    text = await get_my_progress.ainvoke({}, tool_config)
+async def test_progress_tool_says_staff_has_no_progress(staff_client, tool_config, staff):
+    text = await get_my_progress.ainvoke({"state": {"student": staff}}, tool_config)
 
     assert "บุคลากร" in text
     assert "ความคืบหน้ากิจกรรม" in text

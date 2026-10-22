@@ -6,6 +6,7 @@ pure function ทั้งหมด ไม่มี I/O และไม่เร
 from .formatter import (
     format_advisee_progress,
     format_advisees,
+    format_anonymous,
     format_hours,
     format_no_frame,
     format_not_student,
@@ -52,6 +53,7 @@ __all__ = [
     "filter_eligible",
     "filter_open",
     "format_hours",
+    "format_anonymous",
     "format_no_frame",
     "format_not_student",
     "format_progress",

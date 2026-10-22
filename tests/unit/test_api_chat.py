@@ -66,14 +66,13 @@ async def api(act_client, frozen_today, settings_env, chat_model):
     "headers",
     [
         {},
-        {"X-Service-Key": SERVICE_KEY},
         {"Authorization": f"Bearer {JWT}"},
         {"X-Service-Key": "wrong-service-key", "Authorization": f"Bearer {JWT}"},
         {"X-Service-Key": SERVICE_KEY, "Authorization": JWT},
         {"X-Service-Key": SERVICE_KEY, "Authorization": "Bearer "},
     ],
 )
-async def test_chat_requires_both_headers(api, headers):
+async def test_chat_rejects_bad_service_key_or_malformed_token(api, headers):
     client = api.build(AIMessage("สวัสดีครับ"))
 
     response = await client.post(
@@ -311,3 +310,40 @@ async def test_delete_thread_when_activity_api_down(api, api_headers, act_client
     response = await client.delete(f"{CHAT_URL}/t1", headers=api_headers)
 
     assert response.status_code == 503
+
+
+# ---- ผู้ใช้ที่ไม่ได้เข้าสู่ระบบ (ไม่ส่ง Authorization) · 2026-10-22 ----
+
+
+async def test_chat_without_token_is_allowed_as_anonymous(api, act_client):
+    client = api.build(tool_call("search_activities", phase="open"), AIMessage("มีกิจกรรมเปิดรับครับ"))
+
+    response = await client.post(
+        CHAT_URL,
+        json={"thread_id": "anon-1", "message": "มีกิจกรรมอะไรเปิดรับสมัคร"},
+        headers={"X-Service-Key": SERVICE_KEY},
+    )
+
+    assert response.status_code == 200
+    assert answer_of(response.text) == "มีกิจกรรมเปิดรับครับ"
+    assert events_of(response.text, "done")
+    # ไม่ถามตัวตนและไม่ดึงข้อมูลส่วนตัว ดึงแค่รอบกิจกรรม (ข้อมูลสาธารณะ) โดยไม่มี token
+    assert "get_my_summary" not in act_client.names()
+    assert act_client.last("get_schedules")["jwt"] == ""
+
+
+async def test_anonymous_thread_is_kept_apart_from_logged_in_users(api):
+    client = api.build(AIMessage("สวัสดีครับ"))
+
+    await client.post(
+        CHAT_URL,
+        json={"thread_id": "shared", "message": "สวัสดี"},
+        headers={"X-Service-Key": SERVICE_KEY},
+    )
+
+    state = await api.graph.aget_state(
+        run_config(user_id="anonymous", thread_id="shared", jwt=None)
+    )
+    assert state.values["student"].is_anonymous is True
+    other = await api.graph.aget_state(run_config(user_id="119231", thread_id="shared", jwt=JWT))
+    assert not other.values

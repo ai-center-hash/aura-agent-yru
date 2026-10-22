@@ -14,7 +14,7 @@ from ..processing import (
     format_recommendations,
     recommend,
 )
-from .context import NO_STUDENT_MESSAGE, NOT_STUDENT_MESSAGE, jwt_from, student_from
+from .context import jwt_from, personal_data_refusal, student_from
 
 ALREADY_COMPLETE_MESSAGE = "ครบตามเกณฑ์ทุกหมวดแล้ว ไม่มีหมวดที่ต้องเก็บเพิ่ม"
 NO_FRAME_MESSAGE = (
@@ -40,10 +40,8 @@ async def recommend_activities(
     มีกิจกรรมไหนที่ต้องเช็คเงื่อนไขก่อนสมัคร
     """
     student = student_from(state)
-    if student is None:
-        return NO_STUDENT_MESSAGE
-    if not student.is_student:
-        return NOT_STUDENT_MESSAGE.format(subject="หมวดที่ต้องเก็บหรือกิจกรรมที่แนะนำ")
+    if refusal := personal_data_refusal(student, "หมวดที่ต้องเก็บหรือกิจกรรมที่แนะนำ"):
+        return refusal
 
     client = get_act_client()
     jwt = jwt_from(config)

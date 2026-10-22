@@ -9,6 +9,7 @@ from datetime import datetime
 from ..data.schemas import PassportUser, Schedule, SummaryUser
 
 MANDATORY_KEYWORD = "บังคับ"
+ANONYMOUS_NAME = "ผู้ใช้ที่ยังไม่ได้เข้าสู่ระบบ"
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,10 +30,16 @@ class StudentProfile:
     student_id: str | None = None
     is_student: bool = True
     position: str | None = None  # ตำแหน่งของบุคลากร เช่น "อาจารย์" (นักศึกษาเป็น None)
+    is_anonymous: bool = False  # ไม่ได้ส่ง token มา: ค้นหากิจกรรมได้อย่างเดียว
 
     @property
     def is_transfer(self) -> bool:
         return self.student_status == "transfer"
+
+    @classmethod
+    def anonymous(cls) -> "StudentProfile":
+        """ผู้ใช้ที่ไม่ได้เข้าสู่ระบบ (ไม่ได้ส่ง Authorization มา)"""
+        return cls(id=None, name=ANONYMOUS_NAME, is_student=False, is_anonymous=True)
 
     @classmethod
     def from_user(cls, user: SummaryUser) -> "StudentProfile":
