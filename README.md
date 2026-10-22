@@ -19,6 +19,7 @@
 | [docs/phases/](docs/phases/) | แผนพัฒนาแยกเป็น phase (0–6) แต่ละ phase มี checklist, DoD และ handoff |
 | [docs/03-eval-report-2026-10-20.md](docs/03-eval-report-2026-10-20.md) | ผลทดสอบคำถามที่ดึงข้อมูลกิจกรรมกับโมเดลจริง |
 | [docs/04-use-cases.md](docs/04-use-cases.md) | นักศึกษา / อาจารย์ / เจ้าหน้าที่ ทำอะไรได้และไม่ได้ |
+| [docs/05-openwebui-nexus.md](docs/05-openwebui-nexus.md) | ติดตั้ง AURA เป็นโมเดลใน YRU Nexus (Open WebUI Pipe) |
 | [tests/fixtures/README.md](tests/fixtures/README.md) | ที่มาของ fixture และเคสที่แต่ละแถวใช้ทดสอบ (วันอ้างอิง 2026-10-20) |
 | [scripts/dev_chat.py](scripts/dev_chat.py) | **หน้าแชททดลองในเครื่อง** เปิด http://127.0.0.1/ · login ด้วย YRU Passport จริง หรือเลือก persona จำลอง |
 | [scripts/check_act_api.py](scripts/check_act_api.py) | ทดสอบ Activity API จริงด้วย JWT จาก env `AURA_DEV_JWT` (พิมพ์เฉพาะโครงสร้าง) |
