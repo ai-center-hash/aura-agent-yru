@@ -7,7 +7,7 @@
 from datetime import date, datetime, tzinfo
 from zoneinfo import ZoneInfo
 
-from ..data.schemas import Advisee, Schedule
+from ..data.schemas import Advisee, Schedule, StudentSummary
 from .models import (
     MANDATORY_KEYWORD,
     EligibleSchedule,
@@ -38,6 +38,7 @@ THAI_MONTHS = (
 )
 
 MAX_ITEMS = 10
+MAX_REGISTRATIONS = 60  # ประวัติต้องแสดงครบ ไม่อย่างนั้นโมเดลตอบว่า "ไม่พบ" เมื่อรายการเก่ากว่า 10 อันดับ
 UNCERTAIN_TAG = "ไม่แน่ใจเรื่องสิทธิ์สมัคร"
 RESTRICTED_TAG = "เปิดเฉพาะบางกลุ่ม"
 SCHEDULES_TITLE = "กิจกรรมที่สมัครได้"
@@ -89,6 +90,57 @@ def thai_period(start: datetime | None, end: datetime | None, *, tz: tzinfo = BA
 def format_hours(hours: float) -> str:
     """`6.0` → `6 ชม.` และ `11.5` → `11.5 ชม.`"""
     return f"{_number(hours)} ชม."
+
+
+ATTENDED_TITLE = "กิจกรรมที่นับแล้วในแต่ละหมวด"
+
+
+def format_attended(
+    summary: StudentSummary,
+    *,
+    category: str | None = None,
+    report: ProgressReport | None = None,
+    tz: tzinfo = BANGKOK,
+) -> str:
+    """รายชื่อกิจกรรมที่ถูกนับในแต่ละหมวดของกรอบ (กรองด้วยคำในชื่อหมวดได้ เช่น "จิตอาสา")
+
+    ใช้ตอบว่า "เข้ากิจกรรมอะไรในหมวดนี้ไปแล้ว" — ดูจากประวัติการลงทะเบียนไม่ได้
+    เพราะชื่อกิจกรรมมักไม่มีชื่อหมวด และ API ไม่บอกว่าการลงทะเบียนนับเข้าหมวดไหน (เจอกับข้อมูลจริง 2026-10-26)
+    ส่ง `report` มาด้วยเพื่อติดสถานะผ่าน/ขาดของแต่ละหมวดไว้ในบรรทัดเดียวกัน
+    """
+    gaps = {gap.category_id: gap for gap in report.gaps} if report is not None else {}
+    keyword = (category or "").strip()
+    groups = [
+        (item.category_name or group.category_name, item)
+        for group in summary.categories
+        for item in group.frame_items
+        if not keyword or keyword in (item.category_name or group.category_name)
+    ]
+    if keyword and not groups:
+        names = ", ".join(
+            item.category_name or group.category_name
+            for group in summary.categories
+            for item in group.frame_items
+        )
+        return f'[{ATTENDED_TITLE}] ไม่มีหมวดที่ชื่อมีคำว่า "{keyword}" (หมวดทั้งหมด: {names})'
+
+    title = f'{ATTENDED_TITLE} · หมวดที่มีคำว่า "{keyword}"' if keyword else ATTENDED_TITLE
+    lines = [f"[{title}]"]
+    for name, item in groups:
+        status = ""
+        if report is not None:
+            gap = gaps.get(item.category_id)
+            status = f" · {_gap_text(gap)}" if gap is not None else " · ผ่านเกณฑ์แล้ว"
+        lines.append(f"- {name}: นับแล้ว {item.count} กิจกรรม{status}")
+        for activity in item.activities:
+            hours = activity.attendance_hours or activity.duration_hours
+            detail = [activity.title, thai_date(activity.checkin_at, tz=tz)]
+            if hours:
+                detail.append(format_hours(hours))
+            lines.append("  • " + " | ".join(detail))
+        if len(item.activities) < item.count:
+            lines.append(f"  (ระบบส่งรายชื่อมา {len(item.activities)} จาก {item.count} กิจกรรม)")
+    return "\n".join(lines)
 
 
 # ---- ความคืบหน้า ----
@@ -214,8 +266,9 @@ def format_not_student(unit: str | None = None) -> str:
         " ต้องเรียกเครื่องมือก่อนตอบทุกครั้ง มีรหัส → get_advisee_progress,"
         " ไม่มีรหัส → list_my_advisees (แล้วจึง get_advisee_progress ถ้าต้องการรายละเอียดรายคน)",
         "ห้ามสรุปเองว่าดูได้หรือไม่ได้ เครื่องมือตรวจสิทธิ์เอง ถ้าผลบอกว่าดูไม่ได้หรือไม่มีรายชื่อ จึงแจ้งตามนั้น",
-        "คำถามเรื่องกิจกรรมของตัวบุคลากรเอง (ความคืบหน้า ประวัติ คำแนะนำ):"
-        " บุคลากรไม่มีกรอบกิจกรรม ให้บอกสุภาพว่าส่วนนี้ใช้ได้เฉพาะนักศึกษา",
+        "คำถามเรื่องกิจกรรมของตัวบุคลากรเอง (ความคืบหน้า หมวดที่ขาด ประวัติ คำแนะนำ):"
+        " บุคลากรไม่มีกรอบกิจกรรม จึงไม่มีหมวดที่ผ่าน หมวดที่ขาด หรือชั่วโมงใดๆ เลย"
+        " ห้ามบอกชื่อหมวดหรือตัวเลขใดๆ ให้บอกสุภาพว่าส่วนนี้ใช้ได้เฉพาะนักศึกษา",
         "การค้นหารอบกิจกรรมใช้ได้ตามปกติ (เห็นทุกรอบที่ยังรับสมัคร ไม่ได้คัดตามคุณสมบัติผู้สมัคร)",
     ]
     return "\n".join(lines)
@@ -279,7 +332,7 @@ def format_registrations(views: list[RegistrationView], *, tz: tzinfo = BANGKOK)
     if not views:
         return "[ประวัติการลงทะเบียน] ไม่มีรายการ"
 
-    shown = views[:MAX_ITEMS]
+    shown = views[:MAX_REGISTRATIONS]
     header = _header("ประวัติการลงทะเบียน", shown_count=len(shown), total_count=len(views))
 
     lines = [header]
@@ -365,12 +418,16 @@ def _passed_line(item: PassedItem) -> str:
 
 def _gap_line(gap: Gap) -> str:
     name = _with_type(gap.category_name, gap.type_name)
+    return f"{name}: {_gap_text(gap)}"
+
+
+def _gap_text(gap: Gap) -> str:
     missing = []
     if gap.missing_activities:
         missing.append(f"{gap.missing_activities} กิจกรรม")
     if gap.missing_hours:
         missing.append(format_hours(gap.missing_hours))
-    return f"{name}: ขาด {' / '.join(missing)}"
+    return f"ขาด {' / '.join(missing)}"
 
 
 def _with_type(name: str | None, type_name: str | None) -> str:

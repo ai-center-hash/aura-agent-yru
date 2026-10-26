@@ -6,6 +6,7 @@ from aura_agent.processing import (
     EligibleSchedule,
     analyze_gaps,
     filter_eligible,
+    format_attended,
     format_hours,
     format_progress,
     format_recommendations,
@@ -17,7 +18,7 @@ from aura_agent.processing import (
     thai_datetime,
     thai_period,
 )
-from aura_agent.processing.formatter import MAX_ITEMS, UNCERTAIN_TAG
+from aura_agent.processing.formatter import MAX_ITEMS, MAX_REGISTRATIONS, UNCERTAIN_TAG
 
 
 def by_id(schedules, schedule_id):
@@ -298,13 +299,22 @@ def test_format_registrations_empty():
     assert format_registrations([]) == "[ประวัติการลงทะเบียน] ไม่มีรายการ"
 
 
-def test_format_registrations_truncates(registrations):
-    views = map_registrations(registrations) * 2  # 12 รายการ
+def test_format_registrations_shows_a_full_history(registrations):
+    """นักศึกษาจริงมีประวัติ ~40 รายการ ต้องแสดงครบ (เดิมตัดที่ 10 แล้วบอทตอบว่า "ไม่พบ")"""
+    views = map_registrations(registrations) * 7  # 42 รายการ
 
     lines = format_registrations(views).splitlines()
 
-    assert lines[0] == f"[ประวัติการลงทะเบียน] (แสดง {MAX_ITEMS} จาก 12 รายการ)"
-    assert len(lines) == MAX_ITEMS + 1
+    assert lines[0] == "[ประวัติการลงทะเบียน] 42 รายการ"
+    assert len(lines) == 43
+
+
+def test_format_registrations_truncates_very_long_history(registrations):
+    views = map_registrations(registrations) * 11  # 66 รายการ
+
+    lines = format_registrations(views).splitlines()
+
+    assert lines[0] == f"[ประวัติการลงทะเบียน] (แสดง {MAX_REGISTRATIONS} จาก 66 รายการ)"
 
 
 def test_short_type_keeps_label_without_prefix(schedules):
@@ -330,3 +340,40 @@ def test_format_no_frame_without_api_message():
     from aura_agent.processing import format_no_frame
 
     assert "ระบบกิจกรรมแจ้งว่า" not in format_no_frame(None)
+
+
+# ---- กิจกรรมที่นับแล้วในแต่ละหมวด (format_attended) ----
+
+
+def test_attended_lists_activities_per_category(summary):
+    text = format_attended(summary)
+
+    assert text.splitlines()[0] == "[กิจกรรมที่นับแล้วในแต่ละหมวด]"
+    assert "- กิจกรรมจิตอาสาและบำเพ็ญประโยชน์: นับแล้ว 1 กิจกรรม" in text
+    assert "  • จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย | " in text
+
+
+def test_attended_filters_by_category_keyword(summary):
+    text = format_attended(summary, category=" จิตอาสา ")
+
+    assert '[กิจกรรมที่นับแล้วในแต่ละหมวด · หมวดที่มีคำว่า "จิตอาสา"]' in text
+    assert "คุณธรรม" not in text
+
+
+def test_attended_unknown_category_lists_real_names(summary):
+    text = format_attended(summary, category="ดนตรี")
+
+    assert 'ไม่มีหมวดที่ชื่อมีคำว่า "ดนตรี"' in text
+    assert "กิจกรรมจิตอาสาและบำเพ็ญประโยชน์" in text
+
+
+def test_attended_finds_titles_without_category_words():
+    """ของจริง: กิจกรรมที่นับเป็นจิตอาสาไม่มีคำว่า "จิตอาสา" ในชื่อ (เจอ 2026-10-26)"""
+    from tests.evals.personas import load_persona
+
+    summary = load_persona("realistic_with_gaps").summary
+
+    text = format_attended(summary, category="จิตอาสา")
+
+    assert "กิจกรรมสมมติ หมวด 24 ครั้งที่ 1" in text
+    assert "กิจกรรมสมมติ หมวด 42 ครั้งที่ 1" in text

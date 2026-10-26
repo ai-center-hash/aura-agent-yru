@@ -186,7 +186,7 @@ def test_tool_never_takes_identity_parameters(tool):
 
 
 def test_tool_schemas_expose_only_expected_parameters():
-    assert schema_properties(get_my_progress) == set()
+    assert schema_properties(get_my_progress) == {"category"}
     assert schema_properties(recommend_activities) == set()
     assert schema_properties(get_my_registrations) == {"status"}
     assert schema_properties(search_activities) == {"phase", "keyword", "date_from", "date_to"}

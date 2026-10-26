@@ -49,8 +49,8 @@ def make_result(case: EvalCase, **overrides) -> CaseResult:
 def test_dataset_loads_with_expected_shape():
     cases = load_dataset()
 
-    assert len(cases) == 61
-    assert len({case.id for case in cases}) == 61  # id ต้องไม่ซ้ำ
+    assert len(cases) == 63
+    assert len({case.id for case in cases}) == 63  # id ต้องไม่ซ้ำ
 
 
 def test_dataset_category_counts_match_the_plan():
@@ -59,7 +59,7 @@ def test_dataset_category_counts_match_the_plan():
         counts[case.category] = counts.get(case.category, 0) + 1
 
     assert counts == {
-        "progress": 14,
+        "progress": 16,
         "search": 13,
         "recommend": 10,
         "history": 8,
