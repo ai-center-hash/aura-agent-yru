@@ -114,6 +114,7 @@ def test_translator_turns_chunks_into_tokens():
     events = [
         *translator.handle("messages", (AIMessageChunk(content="คุณยัง"), AGENT_META)),
         *translator.handle("messages", (AIMessageChunk(content="ขาด 2 หมวด"), AGENT_META)),
+        *translator.flush(),
     ]
 
     assert texts(events) == "คุณยังขาด 2 หมวด"
@@ -196,6 +197,7 @@ def test_translator_strips_think_tags_while_streaming():
         *translator.handle("messages", (AIMessageChunk(content="<think>คิด"), AGENT_META)),
         *translator.handle("messages", (AIMessageChunk(content="ต่อ</think>คำ"), AGENT_META)),
         *translator.handle("messages", (AIMessageChunk(content="ตอบครับ"), AGENT_META)),
+        *translator.flush(),
     ]
 
     assert texts(events) == "คำตอบครับ"
@@ -203,6 +205,58 @@ def test_translator_strips_think_tags_while_streaming():
 
 def test_translator_flushes_pending_text():
     translator = StreamTranslator()
-    list(translator.handle("messages", (AIMessageChunk(content="จบ<"), AGENT_META)))
+    events = list(translator.handle("messages", (AIMessageChunk(content="จบ<"), AGENT_META)))
 
-    assert texts(list(translator.flush())) == "<"
+    assert texts(events + list(translator.flush())) == "จบ<"
+
+
+def _tool_chunk(name: str) -> AIMessageChunk:
+    return AIMessageChunk(
+        content="",
+        tool_call_chunks=[
+            {"name": name, "args": "{}", "id": "1", "index": 0, "type": "tool_call_chunk"}
+        ],
+    )
+
+
+def test_translator_breaks_paragraph_after_tool_call():
+    """ข้อความก่อนเรียก tool ต้องไม่ต่อติดกับคำตอบจริง (เจอใน eval: "รอสักครู่นะครับมีกิจกรรม...")"""
+    translator = StreamTranslator()
+    message = AIMessage("", tool_calls=[{"name": "search_activities", "args": {}, "id": "1"}])
+
+    events = [
+        *translator.handle("messages", (AIMessageChunk(content="รอสักครู่นะครับ"), AGENT_META)),
+        *translator.handle("messages", (_tool_chunk("search_activities"), AGENT_META)),
+        *translator.handle("updates", {"agent": {"messages": [message]}}),
+        *translator.handle("messages", (AIMessageChunk(content=" มีกิจกรรม"), AGENT_META)),
+        *translator.handle("messages", (AIMessageChunk(content=" 4 รายการ"), AGENT_META)),
+        *translator.flush(),
+    ]
+
+    assert texts(events) == "รอสักครู่นะครับ\n\nมีกิจกรรม 4 รายการ"
+
+
+def test_translator_adds_no_break_when_tool_called_first():
+    translator = StreamTranslator()
+
+    events = [
+        *translator.handle("messages", (_tool_chunk("search_activities"), AGENT_META)),
+        *translator.handle("messages", (AIMessageChunk(content="มีกิจกรรม"), AGENT_META)),
+        *translator.flush(),
+    ]
+
+    assert texts(events) == "มีกิจกรรม"
+
+
+def test_translator_skips_whitespace_only_chunk_after_tool_call():
+    translator = StreamTranslator()
+
+    events = [
+        *translator.handle("messages", (AIMessageChunk(content="รอสักครู่"), AGENT_META)),
+        *translator.handle("messages", (_tool_chunk("get_my_progress"), AGENT_META)),
+        *translator.handle("messages", (AIMessageChunk(content="\n"), AGENT_META)),
+        *translator.handle("messages", (AIMessageChunk(content="คุณยังขาด"), AGENT_META)),
+        *translator.flush(),
+    ]
+
+    assert texts(events) == "รอสักครู่\n\nคุณยังขาด"

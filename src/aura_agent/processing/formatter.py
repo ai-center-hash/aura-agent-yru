@@ -39,6 +39,7 @@ THAI_MONTHS = (
 
 MAX_ITEMS = 10
 MAX_REGISTRATIONS = 60  # ประวัติต้องแสดงครบ ไม่อย่างนั้นโมเดลตอบว่า "ไม่พบ" เมื่อรายการเก่ากว่า 10 อันดับ
+SUB_ITEM = "   - "  # รายการย่อยใต้เลขข้อ (markdown)
 UNCERTAIN_TAG = "ไม่แน่ใจเรื่องสิทธิ์สมัคร"
 RESTRICTED_TAG = "เปิดเฉพาะบางกลุ่ม"
 SCHEDULES_TITLE = "กิจกรรมที่สมัครได้"
@@ -126,20 +127,24 @@ def format_attended(
 
     title = f'{ATTENDED_TITLE} · หมวดที่มีคำว่า "{keyword}"' if keyword else ATTENDED_TITLE
     lines = [f"[{title}]"]
+    # markdown สำเร็จรูป (หมวดตัวหนา + ชื่อกิจกรรมเป็นรายการย่อย) ให้โมเดลลอกต่อ
+    # รูปแบบเดิม "•" + "|" โมเดลยุบเหลือแค่ชื่อหมวด ไม่บอกชื่อกิจกรรม (eval progress-15 ตก 5/5 รอบ 2026-10-26)
     for name, item in groups:
         status = ""
         if report is not None:
             gap = gaps.get(item.category_id)
             status = f" · {_gap_text(gap)}" if gap is not None else " · ผ่านเกณฑ์แล้ว"
-        lines.append(f"- {name}: นับแล้ว {item.count} กิจกรรม{status}")
+        lines.append(f"- **{name}**: นับแล้ว {item.count} กิจกรรม{status}")
         for activity in item.activities:
             hours = activity.attendance_hours or activity.duration_hours
             detail = [activity.title, thai_date(activity.checkin_at, tz=tz)]
             if hours:
                 detail.append(format_hours(hours))
-            lines.append("  • " + " | ".join(detail))
+            lines.append(SUB_ITEM + " · ".join(detail))
         if len(item.activities) < item.count:
-            lines.append(f"  (ระบบส่งรายชื่อมา {len(item.activities)} จาก {item.count} กิจกรรม)")
+            lines.append(
+                f"{SUB_ITEM}(ระบบส่งรายชื่อมา {len(item.activities)} จาก {item.count} กิจกรรม)"
+            )
     return "\n".join(lines)
 
 
@@ -299,12 +304,12 @@ def format_schedules(
 
     lines = [header]
     for index, item in enumerate(shown, start=1):
-        detail = _schedule_detail(item.schedule, tz=tz)
+        tags = []
         if for_staff and item.schedule.is_restricted:
-            detail = f"{detail} | {RESTRICTED_TAG}"
+            tags.append(RESTRICTED_TAG)
         if item.eligibility_uncertain:
-            detail = f"{detail} | {UNCERTAIN_TAG}"
-        lines.append(f"{index}. {detail}")
+            tags.append(UNCERTAIN_TAG)
+        lines.extend(_schedule_block(index, item.schedule, tags=tags, tz=tz))
     return "\n".join(lines)
 
 
@@ -318,10 +323,10 @@ def format_recommendations(recommendations: list[Recommendation], *, tz: tzinfo 
 
     lines = [header]
     for index, item in enumerate(shown, start=1):
-        detail = f"{_schedule_detail(item.schedule, tz=tz)} | {_covers_text(item)}"
-        if item.eligibility_uncertain:
-            detail = f"{detail} | {UNCERTAIN_TAG}"
-        lines.append(f"{index}. {detail}")
+        tags = [UNCERTAIN_TAG] if item.eligibility_uncertain else []
+        lines.extend(
+            _schedule_block(index, item.schedule, covers=_covers_text(item), tags=tags, tz=tz)
+        )
     return "\n".join(lines)
 
 
@@ -356,19 +361,37 @@ def _header(title: str, *, shown_count: int, total_count: int) -> str:
     return f"[{title}] {total_count} รายการ"
 
 
-def _schedule_detail(schedule: Schedule, *, tz: tzinfo) -> str:
-    parts = [
-        schedule.activity.title if schedule.activity else "(ไม่ทราบชื่อกิจกรรม)",
-        f"หมวด: {_with_type(schedule.category_label, schedule.type_label)}",
-        thai_period(schedule.activity_start_date, schedule.activity_end_date, tz=tz),
-    ]
+def _schedule_block(
+    index: int,
+    schedule: Schedule,
+    *,
+    covers: str | None = None,
+    tags: list[str],
+    tz: tzinfo,
+) -> list[str]:
+    """รอบกิจกรรม 1 รอบในรูปแบบที่ผู้ใช้เห็น (ชื่อตัวหนา + รายการย่อย)
+
+    จัดรูปแบบไว้ที่นี่ ไม่ใส่แบบฟอร์มใน prompt เพราะโมเดลเคยกรอกแบบฟอร์มด้วยข้อมูลที่กุขึ้นเอง
+    โดยไม่เรียกเครื่องมือ (eval 2026-10-26) · ถ้ามีข้อมูลจริงที่จัดไว้แล้ว โมเดลจะลอกต่อ
+    """
+    title = schedule.activity.title if schedule.activity else "(ไม่ทราบชื่อกิจกรรม)"
+    when = thai_period(schedule.activity_start_date, schedule.activity_end_date, tz=tz)
     if schedule.duration_hours is not None:
-        parts.append(format_hours(schedule.duration_hours))
+        when = f"{when} ({format_hours(schedule.duration_hours)})"
+    window = _registration_window(schedule, tz=tz)
     seats = _seats(schedule)
-    if seats:
-        parts.append(seats)
-    parts.append(_registration_window(schedule, tz=tz))
-    return " | ".join(parts)
+
+    lines = [
+        f"{index}. **{title}**",
+        f"{SUB_ITEM}วันจัด: {when}",
+        f"{SUB_ITEM}หมวด: {_with_type(schedule.category_label, schedule.type_label)}",
+    ]
+    if covers:
+        lines.append(f"{SUB_ITEM}{covers}")
+    lines.append(f"{SUB_ITEM}ที่นั่ง{seats} · {window}" if seats else f"{SUB_ITEM}{window}")
+    if tags:
+        lines.append(f"{SUB_ITEM}หมายเหตุ: {' · '.join(tags)}")
+    return lines
 
 
 def _covers_text(item: Recommendation) -> str:

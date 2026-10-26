@@ -19,16 +19,19 @@ from ..agent import message_text, run_config
 from ..agent.errors import AgentError
 from ..data import ActApiError, get_act_client
 from ..tools import TOOL_STATUS
+from .cleaner import AnswerCleaner
 
 logger = logging.getLogger(__name__)
 
 AGENT_NODE = "agent"
+TOOLS_NODE = "tools"
 STREAM_MODES = ["updates", "messages"]
 
 THINK_OPEN = "<think>"
 THINK_CLOSE = "</think>"
 
 DEFAULT_STATUS = "กำลังค้นหาข้อมูล..."
+PARAGRAPH_BREAK = "\n\n"
 INTERNAL_MESSAGE = "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้งครับ"
 
 
@@ -132,6 +135,11 @@ class StreamTranslator:
         self.tools_used: list[str] = []
         self._announced: set[str] = set()
         self._think = ThinkFilter()
+        self._cleaner = AnswerCleaner()
+        # โมเดลบางครั้งพิมพ์ "รอสักครู่นะครับ" ก่อนเรียก tool แล้วคำตอบจริงต่อติดกันในบรรทัดเดียว
+        # จึงขึ้นย่อหน้าใหม่ให้ข้อความแรกหลังเรียก tool (ข้อความที่ส่งไปแล้วดึงกลับไม่ได้)
+        self._sent_text = False
+        self._break_pending = False
 
     def handle(self, mode: str, payload: Any) -> Iterator[dict[str, str]]:
         if mode == "messages":
@@ -140,25 +148,37 @@ class StreamTranslator:
             yield from self._handle_update(payload)
 
     def flush(self) -> Iterator[dict[str, str]]:
-        text = self._think.flush()
-        if text:
-            yield token_event(text)
+        yield from self._emit(self._cleaner.feed(self._think.flush()))
+        yield from self._emit(self._cleaner.flush())
 
     def _handle_message(self, payload: Any) -> Iterator[dict[str, str]]:
         chunk, metadata = payload
         if (metadata or {}).get("langgraph_node") != AGENT_NODE:
             return
 
+        yield from self._emit(self._cleaner.feed(self._think.feed(message_text(chunk))))
+
         for call in getattr(chunk, "tool_call_chunks", None) or []:
+            # ข้อความก่อนเรียก tool จบแล้ว ส่งส่วนที่ตัวกรองกันไว้ออกไปก่อนขึ้นย่อหน้าใหม่
+            yield from self._emit(self._cleaner.flush())
             yield from self._announce(call.get("name"))
 
-        text = self._think.feed(message_text(chunk))
-        if text:
-            yield token_event(text)
+    def _emit(self, text: str) -> Iterator[dict[str, str]]:
+        if not text:
+            return
+        if self._break_pending:
+            text = text.lstrip()
+            if not text:
+                return
+            text = PARAGRAPH_BREAK + text
+            self._break_pending = False
+        self._sent_text = True
+        yield token_event(text)
 
     def _handle_update(self, payload: Any) -> Iterator[dict[str, str]]:
         if not isinstance(payload, dict):
             return
+        self._learn_from_tools(payload.get(TOOLS_NODE))
         update = payload.get(AGENT_NODE)
         if not isinstance(update, dict):
             return
@@ -167,7 +187,18 @@ class StreamTranslator:
             for call in getattr(message, "tool_calls", None) or []:
                 yield from self._announce(call.get("name"))
 
+    def _learn_from_tools(self, update: Any) -> None:
+        """จำวันที่จากผลของ tool ให้ตัวกรองใช้แก้วันที่ที่โมเดลพิมพ์เดือนผิด (ผลของ tool ไม่ส่งถึงผู้ใช้)"""
+        if not isinstance(update, dict):
+            return
+        for message in update.get("messages", []) or []:
+            content = getattr(message, "content", None)
+            if isinstance(content, str):
+                self._cleaner.learn_dates(content)
+
     def _announce(self, name: str | None) -> Iterator[dict[str, str]]:
+        if self._sent_text:
+            self._break_pending = True
         if not name or name in self._announced:
             return
         self._announced.add(name)

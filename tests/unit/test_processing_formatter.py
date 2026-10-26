@@ -146,11 +146,13 @@ def test_format_schedules(schedules, student, today):
     lines = text.splitlines()
 
     assert lines[0] == "[กิจกรรมที่สมัครได้] 5 รายการ"
-    assert lines[1] == (
-        "1. จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย ครั้งที่ 2 "
-        "| หมวด: กิจกรรมจิตอาสาและบำเพ็ญประโยชน์ (บังคับ) "
-        "| 5 พ.ย. 2569 09:00-16:00 | 6 ชม. | ว่าง 40/100 | ปิดรับสมัคร 1 พ.ย. 2569"
-    )
+    assert lines[1:5] == [
+        "1. **จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย ครั้งที่ 2**",
+        "   - วันจัด: 5 พ.ย. 2569 09:00-16:00 (6 ชม.)",
+        "   - หมวด: กิจกรรมจิตอาสาและบำเพ็ญประโยชน์ (บังคับ)",
+        "   - ที่นั่งว่าง 40/100 · ปิดรับสมัคร 1 พ.ย. 2569",
+    ]
+    assert lines[5].startswith("2. **")
 
 
 def test_format_schedules_marks_uncertain_eligibility(schedules, student, today):
@@ -158,9 +160,10 @@ def test_format_schedules_marks_uncertain_eligibility(schedules, student, today)
 
     text = format_schedules(eligible)
 
-    uncertain_lines = [line for line in text.splitlines() if UNCERTAIN_TAG in line]
-    assert len(uncertain_lines) == 1
-    assert "จิตอาสาซ่อมแซมอุปกรณ์การเรียน" in uncertain_lines[0]
+    items = [block for block in _items(text) if UNCERTAIN_TAG in block]
+    assert len(items) == 1
+    assert "จิตอาสาซ่อมแซมอุปกรณ์การเรียน" in items[0]
+    assert f"   - หมายเหตุ: {UNCERTAIN_TAG}" in items[0]
 
 
 def test_format_schedules_shows_opening_date_for_upcoming_round(schedules, student, today):
@@ -170,8 +173,8 @@ def test_format_schedules_shows_opening_date_for_upcoming_round(schedules, stude
     text = format_schedules(upcoming)
 
     # เทียบรวมตัวคั่นเพราะคำว่า "เปิดรับสมัคร" มีคำว่า "ปิดรับสมัคร" ซ้อนอยู่
-    assert "| เปิดรับสมัคร 15 พ.ย. 2569" in text
-    assert "| ปิดรับสมัคร" not in text
+    assert "· เปิดรับสมัคร 15 พ.ย. 2569" in text
+    assert "· ปิดรับสมัคร" not in text
 
 
 def test_format_schedules_truncates_at_ten(schedules):
@@ -184,8 +187,8 @@ def test_format_schedules_truncates_at_ten(schedules):
     lines = text.splitlines()
 
     assert lines[0] == f"[กิจกรรมที่สมัครได้] (แสดง {MAX_ITEMS} จาก 12 รายการ)"
-    assert len(lines) == MAX_ITEMS + 1
-    assert lines[-1].startswith("10. ")
+    assert len(_items(text)) == MAX_ITEMS
+    assert _items(text)[-1].startswith("10. ")
 
 
 def test_format_schedules_uses_total_when_given(schedules, student, today):
@@ -216,12 +219,14 @@ def test_format_schedules_without_optional_fields(schedules):
         )
     )
 
-    line = format_schedules([bare]).splitlines()[1]
+    block = _items(format_schedules([bare]))[0]
 
-    assert line.startswith("1. (ไม่ทราบชื่อกิจกรรม) | หมวด: ไม่ระบุหมวด")
-    assert "ชม." not in line
-    assert "ว่าง" not in line
-    assert "ไม่ระบุช่วงรับสมัคร" in line
+    assert block.startswith("1. **(ไม่ทราบชื่อกิจกรรม)**")
+    assert "   - หมวด: ไม่ระบุหมวด" in block
+    assert "ชม." not in block
+    assert "ว่าง" not in block
+    assert "   - ไม่ระบุช่วงรับสมัคร" in block
+    assert "หมายเหตุ" not in block
 
 
 def test_format_schedules_without_max_participants(schedules):
@@ -240,11 +245,12 @@ def test_format_recommendations(summary, schedules, student, today):
     text = format_recommendations(recommend(gaps, eligible, limit=10))
     lines = text.splitlines()
 
+    items = _items(text)
     assert lines[0] == "[กิจกรรมที่แนะนำ] 4 รายการ"
-    assert lines[1].startswith("1. จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย ครั้งที่ 2")
+    assert items[0].startswith("1. **จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย ครั้งที่ 2**")
     # หมวดของรอบตรงกับหมวดที่ขาด จึงไม่พูดชื่อหมวดซ้ำ
-    assert lines[1].endswith("| ช่วยปิดช่องว่างได้ 6 ชม.")
-    assert UNCERTAIN_TAG in lines[2]  # รอบ 108 ที่จำกัดรุ่นปี
+    assert "   - ช่วยปิดช่องว่างได้ 6 ชม." in items[0]
+    assert UNCERTAIN_TAG in items[1]  # รอบ 108 ที่จำกัดรุ่นปี
 
 
 def test_format_recommendations_names_gap_when_labels_differ(schedules):
@@ -349,8 +355,9 @@ def test_attended_lists_activities_per_category(summary):
     text = format_attended(summary)
 
     assert text.splitlines()[0] == "[กิจกรรมที่นับแล้วในแต่ละหมวด]"
-    assert "- กิจกรรมจิตอาสาและบำเพ็ญประโยชน์: นับแล้ว 1 กิจกรรม" in text
-    assert "  • จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย | " in text
+    assert "- **กิจกรรมจิตอาสาและบำเพ็ญประโยชน์**: นับแล้ว 1 กิจกรรม" in text
+    # ชื่อกิจกรรมเป็นรายการย่อย markdown ใต้หมวด
+    assert "\n   - จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย · " in text
 
 
 def test_attended_filters_by_category_keyword(summary):
@@ -377,3 +384,14 @@ def test_attended_finds_titles_without_category_words():
 
     assert "กิจกรรมสมมติ หมวด 24 ครั้งที่ 1" in text
     assert "กิจกรรมสมมติ หมวด 42 ครั้งที่ 1" in text
+
+
+def _items(text: str) -> list[str]:
+    """แยกผลของ formatter เป็นก้อนละ 1 รายการ (บรรทัดเลขข้อ + รายการย่อยใต้ข้อนั้น)"""
+    items: list[str] = []
+    for line in text.splitlines()[1:]:
+        if line.startswith("   "):
+            items[-1] += "\n" + line
+        else:
+            items.append(line)
+    return items
