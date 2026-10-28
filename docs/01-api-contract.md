@@ -2,7 +2,7 @@
 
 เอกสารนี้ส่งให้ทีม backend ได้เลย Base URL: `http://10.20.41.54:8100` (เครื่อง yru-ai · port 8000 ของเครื่องนี้เป็นของ backend)
 
-ลองยิงได้จากหน้า Swagger ที่ `http://10.20.41.54:8100/docs` · `SERVICE_KEY` ขอจากผู้ดูแล AURA ทางช่องทางส่วนตัว
+หน้า Swagger (`/docs`, `/openapi.json`) ปิดบนเครื่องจริงตั้งแต่ 2026-10-28 (ได้ 404) ลองยิงได้บนเครื่องผู้พัฒนาที่ตั้ง `EXPOSE_DOCS=true` · `SERVICE_KEY` ขอจากผู้ดูแล AURA ทางช่องทางส่วนตัว
 
 ## Headers ที่ต้องส่งทุก request
 
@@ -21,6 +21,8 @@
 }
 ```
 - `thread_id`: frontend สร้างเป็น UUID ต่อห้องแชท ส่งค่าเดิมเพื่อคุยต่อในบทสนทนาเดิม
+  **ไม่ส่ง `Authorization` (ผู้ใช้ที่ไม่ได้เข้าสู่ระบบ) ต้องเป็น UUID เท่านั้น ไม่อย่างนั้นได้ HTTP 422** (2026-10-28)
+  เพราะผู้ใช้กลุ่มนี้แยกห้องกันด้วย thread_id อย่างเดียว · ประวัติแชทของผู้ใช้กลุ่มนี้ถูกลบหลังไม่มีการใช้งาน 1 วัน (ผู้ใช้ที่เข้าสู่ระบบ 30 วัน)
 - `message`: ยาวได้ 1–1000 ตัวอักษร
 
 **Response:** `Content-Type: text/event-stream`
@@ -49,7 +51,7 @@ data: {"thread_id": "c1f0a7e2-...", "tools_used": ["get_my_progress"], "latency_
 | HTTP / code | สาเหตุ | สิ่งที่ frontend ควรทำ |
 |---|---|---|
 | `401` (HTTP) | `X-Service-Key` ผิดหรือไม่ได้ส่ง หรือ `Authorization` ไม่ใช่รูปแบบ `Bearer <token>` | เป็นปัญหาฝั่ง backend |
-| `422` (HTTP) | body ไม่ถูกรูปแบบ | ตรวจ request |
+| `422` (HTTP) | body ไม่ถูกรูปแบบ หรือไม่ได้ส่ง `Authorization` แต่ `thread_id` ไม่ใช่ UUID | ตรวจ request |
 | `TOKEN_EXPIRED` | Passport (หรือ Activity API) ตอบ 401 | ให้ผู้ใช้ login ใหม่ |
 | `UPSTREAM_UNAVAILABLE` | เรียก Activity API ไม่ได้ หรือ timeout | แสดงว่า "ระบบกิจกรรมไม่พร้อมใช้งานชั่วคราว" |
 | `LLM_UNAVAILABLE` | เรียก Ollama ไม่ได้ | แสดงว่า "ผู้ช่วยไม่พร้อมใช้งานชั่วคราว" |
@@ -74,7 +76,7 @@ AURA หาว่าใครเป็นที่ปรึกษาของใ
 
 | Method | Path | หน้าที่ |
 |---|---|---|
-| `GET` | `/v1/health` | `{"status":"ok","ollama":"ok","activity_api":"ok"}` (ไม่ต้องใช้ JWT) |
+| `GET` | `/v1/health` | `{"status":"ok","ollama":"ok","activity_api":"ok"}` (ไม่ต้องใช้ JWT · ผลถูกจำไว้ 10 วินาที) |
 | `DELETE` | `/v1/chat/{thread_id}` | ลบประวัติแชทของ thread นี้ (ลบได้เฉพาะของตัวเอง) |
 
 ## ผู้ใช้ทุกบทบาทถามได้เท่ากัน (2026-10-22)

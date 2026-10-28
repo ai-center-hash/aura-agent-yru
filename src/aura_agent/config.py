@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     sqlite_path: str = "./data/aura.sqlite"
     cache: Literal["memory", "redis"] = "memory"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    expose_docs: bool = False  # เปิด /docs และ /openapi.json (เครื่องผู้พัฒนา) · เครื่องจริงปิดไว้
     timezone: str = "Asia/Bangkok"
 
     @model_validator(mode="after")

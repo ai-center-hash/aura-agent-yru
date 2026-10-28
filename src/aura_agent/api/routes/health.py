@@ -1,7 +1,11 @@
-"""`GET /v1/health` — ไม่ต้องใช้ JWT และไม่ต้องใช้ service key (ให้ระบบ monitoring เรียกได้)"""
+"""`GET /v1/health` — ไม่ต้องใช้ JWT และไม่ต้องใช้ service key (ให้ระบบ monitoring เรียกได้)
+
+ใครก็เรียกได้ จึงจำผลไว้ `HEALTH_CACHE_S` วินาที ไม่ให้การยิงถี่ๆ กลายเป็นการยิง Ollama/Activity API ตาม
+"""
 
 import asyncio
 import logging
+import time
 
 import httpx
 from fastapi import APIRouter
@@ -15,6 +19,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1", tags=["health"])
 
 HEALTH_TIMEOUT_S = 3.0
+HEALTH_CACHE_S = 10.0
 
 OK = "ok"
 DOWN = "down"
@@ -22,12 +27,30 @@ MODEL_MISSING = "model_missing"
 UNKNOWN = "unknown"
 
 
+_lock = asyncio.Lock()
+_last: tuple[float, HealthResponse] | None = None
+
+
 @router.get("/health")
 async def health() -> HealthResponse:
-    settings = get_settings()
-    llm_status, activity_status = await asyncio.gather(check_llm(settings), check_activity_api())
-    overall = OK if llm_status == OK and activity_status == OK else "degraded"
-    return HealthResponse(status=overall, ollama=llm_status, activity_api=activity_status)
+    global _last
+    async with _lock:  # request ที่มาพร้อมกันรอผลจากการเช็ครอบเดียวกัน
+        if _last is not None and time.monotonic() - _last[0] < HEALTH_CACHE_S:
+            return _last[1]
+        settings = get_settings()
+        llm_status, activity_status = await asyncio.gather(
+            check_llm(settings), check_activity_api()
+        )
+        overall = OK if llm_status == OK and activity_status == OK else "degraded"
+        result = HealthResponse(status=overall, ollama=llm_status, activity_api=activity_status)
+        _last = (time.monotonic(), result)
+        return result
+
+
+def clear_health_cache() -> None:
+    """ลืมผลที่จำไว้ (ใช้ใน test)"""
+    global _last
+    _last = None
 
 
 async def check_llm(settings: Settings) -> str:

@@ -315,12 +315,15 @@ async def test_delete_thread_when_activity_api_down(api, api_headers, act_client
 # ---- ผู้ใช้ที่ไม่ได้เข้าสู่ระบบ (ไม่ส่ง Authorization) · 2026-10-22 ----
 
 
+ANON_THREAD = "c1f0a7e2-5b3d-4f6a-9e8c-2d7b1a0f4e6c"
+
+
 async def test_chat_without_token_is_allowed_as_anonymous(api, act_client):
     client = api.build(tool_call("search_activities", phase="open"), AIMessage("มีกิจกรรมเปิดรับครับ"))
 
     response = await client.post(
         CHAT_URL,
-        json={"thread_id": "anon-1", "message": "มีกิจกรรมอะไรเปิดรับสมัคร"},
+        json={"thread_id": ANON_THREAD, "message": "มีกิจกรรมอะไรเปิดรับสมัคร"},
         headers={"X-Service-Key": SERVICE_KEY},
     )
 
@@ -337,13 +340,41 @@ async def test_anonymous_thread_is_kept_apart_from_logged_in_users(api):
 
     await client.post(
         CHAT_URL,
-        json={"thread_id": "shared", "message": "สวัสดี"},
+        json={"thread_id": ANON_THREAD, "message": "สวัสดี"},
         headers={"X-Service-Key": SERVICE_KEY},
     )
 
     state = await api.graph.aget_state(
-        run_config(user_id="anonymous", thread_id="shared", jwt=None)
+        run_config(user_id="anonymous", thread_id=ANON_THREAD, jwt=None)
     )
     assert state.values["student"].is_anonymous is True
-    other = await api.graph.aget_state(run_config(user_id="119231", thread_id="shared", jwt=JWT))
+    other = await api.graph.aget_state(run_config(user_id="119231", thread_id=ANON_THREAD, jwt=JWT))
     assert not other.values
+
+
+@pytest.mark.parametrize("thread_id", ["1", "shared", "nexus-42"])
+async def test_anonymous_thread_id_must_be_uuid(api, thread_id):
+    """ผู้ใช้ทั่วไปทุกคนใช้ subject เดียวกัน thread_id ที่เดาได้จะทำให้เห็นแชทของคนอื่น"""
+    client = api.build(AIMessage("สวัสดีครับ"))
+
+    response = await client.post(
+        CHAT_URL,
+        json={"thread_id": thread_id, "message": "สวัสดี"},
+        headers={"X-Service-Key": SERVICE_KEY},
+    )
+
+    assert response.status_code == 422
+    assert not (
+        await api.graph.aget_state(run_config(user_id="anonymous", thread_id=thread_id, jwt=None))
+    ).values
+
+
+async def test_logged_in_thread_id_does_not_need_uuid(api, api_headers):
+    """ผู้ใช้ที่เข้าสู่ระบบแล้ว ห้องแชทผูกกับตัวตนอยู่แล้ว (เช่น Open WebUI ส่ง nexus-{id})"""
+    client = api.build(AIMessage("สวัสดีครับ"))
+
+    response = await client.post(
+        CHAT_URL, json={"thread_id": "nexus-42", "message": "สวัสดี"}, headers=api_headers
+    )
+
+    assert response.status_code == 200

@@ -16,6 +16,14 @@ TAGS_URL = f"{OLLAMA_URL}/api/tags"
 MODEL = "qwen3.6:35b-a3b"
 
 
+@pytest.fixture(autouse=True)
+def fresh_health():
+    """ทุก test เริ่มโดยไม่มีผลที่จำไว้จาก test ก่อนหน้า"""
+    health_module.clear_health_cache()
+    yield
+    health_module.clear_health_cache()
+
+
 @pytest.fixture
 async def health_client(settings_env, act_client):
     app = create_app(graph=object())
@@ -126,3 +134,24 @@ async def test_health_skips_llm_check_for_other_providers(settings_env, act_clie
 
     assert body["ollama"] == "unknown"
     assert body["status"] == "degraded"
+
+
+async def test_health_reuses_recent_result(health_client, respx_mock):
+    """ใครก็เรียก /v1/health ได้ ยิงถี่ๆ ต้องไม่ทำให้เราเรียก Ollama ตามทุกครั้ง"""
+    route = respx_mock.get(TAGS_URL).mock(return_value=httpx.Response(200, json=tags(MODEL)))
+
+    first = (await health_client.get("/v1/health")).json()
+    second = (await health_client.get("/v1/health")).json()
+
+    assert first == second
+    assert route.call_count == 1
+
+
+async def test_health_checks_again_after_cache_expires(health_client, respx_mock, monkeypatch):
+    route = respx_mock.get(TAGS_URL).mock(return_value=httpx.Response(200, json=tags(MODEL)))
+    monkeypatch.setattr(health_module, "HEALTH_CACHE_S", 0.0)
+
+    await health_client.get("/v1/health")
+    await health_client.get("/v1/health")
+
+    assert route.call_count == 2

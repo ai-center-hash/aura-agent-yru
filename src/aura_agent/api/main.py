@@ -10,7 +10,9 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from ..agent import build_graph, sqlite_checkpointer
 from ..config import get_settings
@@ -49,11 +51,42 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app(*, graph: Any | None = None) -> FastAPI:
     """สร้าง app ใหม่ (ส่ง `graph` เข้ามาได้เพื่อใช้ของปลอมใน test)"""
-    app = FastAPI(title=TITLE, description=DESCRIPTION, lifespan=lifespan)
+    app = FastAPI(
+        title=TITLE,
+        description=DESCRIPTION,
+        lifespan=lifespan,
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+    )
     app.state.graph = graph
     app.include_router(health.router)
     app.include_router(chat.router)
+    _add_docs_routes(app)
     return app
+
+
+def _add_docs_routes(app: FastAPI) -> None:
+    """`/docs` และ `/openapi.json` ตอบเฉพาะเมื่อ `EXPOSE_DOCS=true` ไม่อย่างนั้นได้ 404
+
+    เช็คตอนมี request ไม่ใช่ตอนสร้าง app เพราะ `app` ระดับ module ถูกสร้างตอน import ก่อนอ่าน .env
+    เครื่องจริงปิดไว้ เพื่อไม่บอกโครงสร้าง API ให้ทุกคนในเครือข่าย
+    """
+
+    @app.get("/openapi.json", include_in_schema=False)
+    async def openapi() -> JSONResponse:
+        _require_docs()
+        return JSONResponse(app.openapi())
+
+    @app.get("/docs", include_in_schema=False)
+    async def docs() -> HTMLResponse:
+        _require_docs()
+        return get_swagger_ui_html(openapi_url="/openapi.json", title=f"{TITLE} · docs")
+
+
+def _require_docs() -> None:
+    if not get_settings().expose_docs:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
 
 
 app = create_app()
