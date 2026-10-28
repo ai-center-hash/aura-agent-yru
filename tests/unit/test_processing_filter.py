@@ -1,7 +1,7 @@
 """test ของ filter_eligible: ตัดรอบที่เต็ม หมดเวลา และกลุ่มเป้าหมายไม่ตรง"""
 
 from dataclasses import replace
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -35,6 +35,20 @@ def test_last_day_of_registration_is_still_eligible(schedules, student):
 
     assert 107 in on_deadline
     assert 107 not in after_deadline
+
+
+def test_deadline_in_utc_is_compared_in_thai_time(schedules, student):
+    """17:30 UTC ของวันที่ 26 = 00:30 ของวันที่ 27 ตามเวลาไทย จึงยังสมัครได้ในวันที่ 27"""
+    late_utc = [
+        schedule.model_copy(
+            update={"registration_end_date": datetime(2026, 10, 26, 17, 30, tzinfo=UTC)}
+        )
+        for schedule in schedules
+        if schedule.id == 107
+    ]
+
+    assert ids(filter_eligible(late_utc, student, date(2026, 10, 27))) == [107]
+    assert ids(filter_eligible(late_utc, student, date(2026, 10, 28))) == []
 
 
 def test_other_faculty_is_dropped(schedules, student, today):

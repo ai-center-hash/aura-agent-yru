@@ -13,6 +13,7 @@
 from datetime import date
 
 from ..data.schemas import Schedule
+from .formatter import BANGKOK
 from .models import EligibleSchedule, StudentProfile
 
 # เปลี่ยนเป็น True เมื่อ Q4 มีคำตอบแล้ว และเติมวิธีเทียบใน `_matches_year_prefix`
@@ -67,9 +68,17 @@ def filter_open(schedules: list[Schedule], today: date) -> list[EligibleSchedule
 
 
 def _registration_closed(schedule: Schedule, today: date) -> bool:
-    """ปิดรับสมัครแล้วหรือยัง (วันสุดท้ายยังนับว่าสมัครได้)"""
+    """ปิดรับสมัครแล้วหรือยัง (วันสุดท้ายยังนับว่าสมัครได้)
+
+    เทียบเป็นวันตามเวลาไทยเหมือน formatter เผื่อ API ส่งเวลาแบบ UTC มา
+    (`2026-10-26T17:30:00Z` คือ 27 ต.ค. ตามเวลาไทย ไม่ใช่ 26)
+    """
     deadline = schedule.registration_end_date
-    return deadline is not None and deadline.date() < today
+    if deadline is None:
+        return False
+    if deadline.tzinfo is not None:
+        deadline = deadline.astimezone(BANGKOK)
+    return deadline.date() < today
 
 
 def _matches_student_code(schedule: Schedule, student: StudentProfile) -> bool:

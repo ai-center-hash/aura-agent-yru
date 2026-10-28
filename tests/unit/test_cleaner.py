@@ -86,6 +86,21 @@ def test_cleaner_does_not_guess_between_two_candidates():
     assert clean("วันที่ 1 มิ.ย. 2569", dates=dates) == "วันที่ 1 มิ.ย. 2569"
 
 
+@pytest.mark.parametrize("chunk", [None, 1, 3])
+def test_cleaner_keeps_dates_the_user_typed(chunk):
+    """ผู้ใช้ถามถึง 1 พ.ค. เอง (ปีจะพิมพ์หรือไม่ก็ได้) โมเดลตอบถึงวันนั้น → ห้ามแก้เป็น 1 พ.ย. ที่อยู่ในผลของเครื่องมือ"""
+    cleaner = AnswerCleaner()
+    cleaner.learn_dates(TOOL_RESULT)
+    cleaner.learn_user_dates("วันที่ 1 พ.ค. 69 มีกิจกรรมไหม")
+    raw = "วันที่ 1 พ.ค. 2569 ไม่มีกิจกรรมครับ แต่ปิดรับสมัคร 5 พ.ค. 2569"
+
+    size = chunk or len(raw)
+    text = "".join(cleaner.feed(raw[i : i + size]) for i in range(0, len(raw), size))
+
+    # 1 พ.ค. ผู้ใช้พิมพ์เอง จึงคงไว้ · 5 พ.ค. ผู้ใช้ไม่ได้พูดถึง จึงยังแก้ตามผลของเครื่องมือ
+    assert text + cleaner.flush() == "วันที่ 1 พ.ค. 2569 ไม่มีกิจกรรมครับ แต่ปิดรับสมัคร 5 พ.ย. 2569"
+
+
 def test_known_dates_with_and_without_year():
     found = known_dates([TOOL_RESULT])
 

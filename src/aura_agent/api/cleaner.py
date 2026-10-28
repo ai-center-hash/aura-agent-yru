@@ -11,6 +11,8 @@
 | emoji | ตัดออก |
 | "1 พ.ค. 2569" ทั้งที่ข้อมูลคือ "1 พ.ย. 2569" | แก้เป็นวันที่ในผลของเครื่องมือ (ดู `known_dates`) |
 
+วันที่ที่ผู้ใช้พิมพ์มาเองไม่แก้ (ดู `learn_user_dates`)
+
 ข้อความไหลมาทีละชิ้น จึงกันท้ายไว้ `HOLD_CHARS` ตัวอักษรรอชิ้นถัดไป เผื่อคำที่ต้องแก้ถูกแบ่งคนละชิ้น
 """
 
@@ -56,10 +58,15 @@ class AnswerCleaner:
         self._held = ""
         self._at_line_start = True  # ข้อความที่ส่งไปแล้วจบที่ต้นบรรทัด (หรือมีแค่ช่องว่างหลังขึ้นบรรทัด)
         self._dates: set[tuple[str, str, str | None]] = set()
+        self._user_dates: set[tuple[str, str]] = set()
 
     def learn_dates(self, text: str) -> None:
         """จำวันที่จากผลของเครื่องมือ ใช้แก้วันที่ที่โมเดลพิมพ์เดือนผิด"""
         self._dates |= known_dates([text])
+
+    def learn_user_dates(self, text: str) -> None:
+        """จำวันที่ที่ผู้ใช้พิมพ์มาเอง โมเดลพูดถึงวันนั้นเพราะผู้ใช้ถาม ไม่ใช่พิมพ์ผิด จึงห้ามแก้"""
+        self._user_dates |= {(day, month) for day, month, _ in known_dates([text])}
 
     def feed(self, text: str) -> str:
         if not text:
@@ -95,7 +102,7 @@ class AnswerCleaner:
 
     def _fix_date(self, match: re.Match[str]) -> str:
         day, month, year = match.groups()
-        if (day, month, year) in self._dates:
+        if (day, month, year) in self._dates or (day, month) in self._user_dates:
             return match.group(0)
         # เดือนที่ต่างกัน 1 ตัวอักษร (พ.ค./พ.ย.) และมีวันที่นั้นในข้อมูลจริงเพียงแบบเดียว → โมเดลพิมพ์ผิด
         candidates = [
