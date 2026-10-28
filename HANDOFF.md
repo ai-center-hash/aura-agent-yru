@@ -1,7 +1,7 @@
 # HANDOFF · AURA-AGENT
 
 > เอกสารส่งต่องาน อัปเดตทุกครั้งที่จบ phase หรือจบ session
-> **อัปเดตล่าสุด:** 2026-10-28 · แก้ตามผลตรวจความปลอดภัย/ความถูกต้อง (ห้องแชทผู้ใช้ทั่วไป, ตัดประวัติ, ลบ thread เก่า, ปิด /docs) · **ยังไม่ได้รัน eval และยังไม่ได้ deploy**
+> **อัปเดตล่าสุด:** 2026-10-28 · แก้ตามผลตรวจความปลอดภัย/ความถูกต้อง (ห้องแชทผู้ใช้ทั่วไป, ตัดประวัติ, ลบ thread เก่า, ปิด /docs) · eval 63/63 · **ยังไม่ได้ deploy** (อยู่ใน branch `fix/review-2026-10-28`)
 > ยืนยันตัวตนผ่าน Passport + เส้น public ของ Activity API · test 523/523 ผ่าน
 
 ## สถานะ
@@ -38,7 +38,7 @@ python -m uv run python scripts/dev_chat.py                 # หน้าต่
 3. **Q4** `target_student_year_prefix` เทียบกับอะไร (ใช้แค่ 3/32 รอบ)
 4. ขอบัญชีนักศึกษาทดสอบที่**มีกรอบกิจกรรม** เพราะบัญชีที่มีอยู่เป็น `no_frame` จึงยังไม่เคยเห็น `StudentSummary` จริง (Q2)
 
-**ก่อน deploy รอบหน้า (งาน 2026-10-28):** เปิด tunnel แล้วรัน eval เต็ม 1 รอบ (ต้องได้ 63/63 เหมือนเดิม) →
+**ก่อน deploy รอบหน้า (งาน 2026-10-28):** eval ผ่าน 63/63 แล้ว → merge `fix/review-2026-10-28` เข้า main + push →
 `sudo bash /opt/aura-agent/deploy/install.sh` (ติดตั้ง `aura-prune.timer` ให้ด้วย) → ทดสอบ `/docs` ได้ 404 และ `/v1/health` ยังตอบ
 → ส่งคำสั่ง firewall ใน [phase-6](docs/phases/phase-6-integration.md) ให้ผู้ดูแลเครื่องตรวจ · แจ้ง backend ว่าผู้ใช้ไม่ login ต้องส่ง `thread_id` เป็น UUID
 
@@ -171,7 +171,7 @@ AURA ไม่ใช้ `/act/activities` · ใช้ `summary/user/{id}` ด�
   - ปิด `/docs` `/openapi.json` `/redoc` (เปิดด้วย `EXPOSE_DOCS=true`) · `/v1/health` จำผล 10 วินาที
   - `agent.prune_threads` + `scripts/prune_threads.py` (`--dry-run`, พิมพ์แค่จำนวน) + `deploy/aura-prune.{service,timer}` ทุกวัน 03:00 · `install.sh` ติดตั้งให้
   - เอกสาร: api-contract (UUID/422, `/docs`, health) · phase-6 (คำสั่ง firewall ที่เสนอ — **ยังไม่ได้รัน**) · แก้ส่วน "API เปิดข้อมูล" ที่เขียนว่า AURA ไม่ใช้ `/auth/users`
-- **ผล:** pytest **523 passed** · ruff ผ่าน · `bash -n deploy/install.sh` ผ่าน · **ยังไม่ได้รัน eval** (tunnel ไม่ได้เปิด) — ทุกข้อใน eval เป็นคำถามเดียว การตัดประวัติจึงไม่มีผล แต่ตัวกรองวันที่มีผลกับข้อที่ถามด้วยวันที่ · ยังไม่ได้ deploy
+- **ผล:** pytest **523 passed** · ruff ผ่าน · `bash -n deploy/install.sh` ผ่าน · **eval เต็ม 63/63** (tool 100% · fact 100% · safety 100% · TTFT p50 3.2 วิ · รวม p50 5.3 วิ) · data_audit กุข้อมูล 0 (นับ "ไม่เรียกเครื่องมือ" 1 ข้อคือ `recommend-04` ซึ่ง dataset ยอมให้ไม่เรียก) · self-test (โมเดลปลอม) ตก 14 ข้อเท่ากับ main · ยังไม่ได้ deploy
 - **ข้อจำกัด:** งบ 12k ตัวอักษรประมาณเอา ยังไม่ได้วัด token จริง · รอบที่ปิดรับสมัครวันนี้ตอน 16:30 ยังแสดงจนจบวัน (ตั้งใจ: เทียบเป็นวัน) · ไฟล์ SQLite ไม่หดหลังลบ (SQLite ใช้พื้นที่ซ้ำเอง)
 
 ### ตรวจ `/v1/auth/users?include_activity_summary=1` สำหรับขั้นที่ 2 (อาจารย์) · 2026-10-22
