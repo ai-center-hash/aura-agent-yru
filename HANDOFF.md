@@ -1,7 +1,7 @@
 # HANDOFF · AURA-AGENT
 
 > เอกสารส่งต่องาน อัปเดตทุกครั้งที่จบ phase หรือจบ session
-> **อัปเดตล่าสุด:** 2026-10-28 · แก้ตามผลตรวจความปลอดภัย/ความถูกต้อง (ห้องแชทผู้ใช้ทั่วไป, ตัดประวัติ, ลบ thread เก่า, ปิด /docs) · eval 63/63 · **ยังไม่ได้ deploy** (อยู่ใน branch `fix/review-2026-10-28`)
+> **อัปเดตล่าสุด:** 2026-10-28 · แก้ตามผลตรวจความปลอดภัย/ความถูกต้อง (ห้องแชทผู้ใช้ทั่วไป, ตัดประวัติ, ลบ thread เก่า, ปิด /docs) · eval 63/63 · **deploy `f9597fe` แล้ว** (2026-10-28)
 > ยืนยันตัวตนผ่าน Passport + เส้น public ของ Activity API · test 523/523 ผ่าน
 
 ## สถานะ
@@ -14,7 +14,7 @@
 | 3 · Tools + Agent | 🟡 เกือบเสร็จ | คุยกับโมเดล + token จริงแล้ว · `analyze_gaps`/`filter_eligible`/`recommend` รันกับข้อมูลจริงได้ · บั๊ก 2 จุดจากชื่อประเภทจริง**แก้แล้ว** (2026-10-21) · รอ Q9 ยืนยันว่าหมวดไหนบังคับ |
 | 4 · API | 🟡 เกือบเสร็จ | test ครบ · SSE ใช้จริงผ่านหน้าแชทแล้ว · ยังไม่ได้ curl `/v1/chat` ของ API ตัวจริง (มี service key) ด้วย token จริง |
 | 5 · Evals | 🟡 เกือบเสร็จ | 45 ข้อ (เพิ่ม persona โครงสร้างจริง 5 ข้อ) · `qwen3.6:35b-a3b` **ผ่านทุกเกณฑ์** (2026-10-21: tool 98% · fact 98% · safety 100% · TTFT p50 1.7 วิ · กุข้อมูล 0) · **ยังไม่ได้เทียบโมเดลที่ 2** (`bonsai-2:27b`) · `recommend-02` ยังตก |
-| 6 · Integration + Pilot | 🟡 | **deploy แล้ว** `http://10.20.41.54:8100` (2026-10-21) · บุคลากรใช้ได้ขั้นที่ 1 (deploy `670a21a` 2026-10-22) · ลบ thread เก่า ✅ (2026-10-28 รอ deploy) · ต่อไป: backend ต่อเข้ามาทดสอบ, firewall (มีคำสั่งเสนอใน phase-6), log JSON, pilot 10–20 คน |
+| 6 · Integration + Pilot | 🟡 | **deploy แล้ว** `http://10.20.41.54:8100` (2026-10-21) · บุคลากรใช้ได้ขั้นที่ 1 (deploy `670a21a` 2026-10-22) · ลบ thread เก่า ✅ (deploy `f9597fe` 2026-10-28) · ต่อไป: backend ต่อเข้ามาทดสอบ, firewall (มีคำสั่งเสนอใน phase-6), log JSON, pilot 10–20 คน |
 
 สัญลักษณ์: ⬜ ยังไม่เริ่ม · 🟡 กำลังทำ · ✅ เสร็จ (ผ่าน DoD) · ⛔ ติดปัญหา
 
@@ -38,9 +38,8 @@ python -m uv run python scripts/dev_chat.py                 # หน้าต่
 3. **Q4** `target_student_year_prefix` เทียบกับอะไร (ใช้แค่ 3/32 รอบ)
 4. ขอบัญชีนักศึกษาทดสอบที่**มีกรอบกิจกรรม** เพราะบัญชีที่มีอยู่เป็น `no_frame` จึงยังไม่เคยเห็น `StudentSummary` จริง (Q2)
 
-**ก่อน deploy รอบหน้า (งาน 2026-10-28):** eval ผ่าน 63/63 แล้ว → merge `fix/review-2026-10-28` เข้า main + push →
-`sudo bash /opt/aura-agent/deploy/install.sh` (ติดตั้ง `aura-prune.timer` ให้ด้วย) → ทดสอบ `/docs` ได้ 404 และ `/v1/health` ยังตอบ
-→ ส่งคำสั่ง firewall ใน [phase-6](docs/phases/phase-6-integration.md) ให้ผู้ดูแลเครื่องตรวจ · แจ้ง backend ว่าผู้ใช้ไม่ login ต้องส่ง `thread_id` เป็น UUID
+**ค้างจากงาน 2026-10-28 (deploy แล้ว):** ส่งคำสั่ง firewall ใน [phase-6](docs/phases/phase-6-integration.md) ให้ผู้ดูแลเครื่องตรวจ ·
+แจ้ง backend ว่าผู้ใช้ไม่ login ต้องส่ง `thread_id` เป็น UUID · เช้า 29 ต.ค. ดูผลรอบแรกของ `journalctl -u aura-prune -n 5`
 
 **ทำต่อได้เลยโดยไม่ต้องรอ:** แก้ข้อ `recommend-02` ใน eval, ขึ้นบรรทัดใหม่ระหว่างข้อความก่อน/หลังเรียก tool, เทียบโมเดลตัวที่สอง (`bonsai-2:27b`), เริ่ม Phase 6
 
@@ -172,6 +171,9 @@ AURA ไม่ใช้ `/act/activities` · ใช้ `summary/user/{id}` ด�
   - `agent.prune_threads` + `scripts/prune_threads.py` (`--dry-run`, พิมพ์แค่จำนวน) + `deploy/aura-prune.{service,timer}` ทุกวัน 03:00 · `install.sh` ติดตั้งให้
   - เอกสาร: api-contract (UUID/422, `/docs`, health) · phase-6 (คำสั่ง firewall ที่เสนอ — **ยังไม่ได้รัน**) · แก้ส่วน "API เปิดข้อมูล" ที่เขียนว่า AURA ไม่ใช้ `/auth/users`
 - **ผล:** pytest **523 passed** · ruff ผ่าน · `bash -n deploy/install.sh` ผ่าน · **eval เต็ม 63/63** (tool 100% · fact 100% · safety 100% · TTFT p50 3.2 วิ · รวม p50 5.3 วิ) · data_audit กุข้อมูล 0 (นับ "ไม่เรียกเครื่องมือ" 1 ข้อคือ `recommend-04` ซึ่ง dataset ยอมให้ไม่เรียก) · self-test (โมเดลปลอม) ตก 14 ข้อเท่ากับ main · ยังไม่ได้ deploy
+- **deploy `f9597fe` บน yru-ai:** `/v1/health` ok ทั้ง 3 ส่วน · `/docs` → 404 · `prune_threads.py --dry-run` ตรวจ 77 ห้อง จะลบ 1 (ผู้ใช้ไม่ login) · `aura-prune.timer` รอบแรก 2026-10-29 03:00
+  - **บทเรียน:** `install.sh` ที่ถูกแก้ จะมีผลตั้งแต่การรัน**ครั้งถัดไป** เพราะ bash เปิดไฟล์เดิมค้างไว้ก่อน `git reset` ดึงของใหม่ รอบนี้ timer จึงไม่ถูกติดตั้ง ต้อง `install` + `systemctl enable --now aura-prune.timer` เอง
+  - terminal ที่ SSH เข้า yru-ai ทำคำสั่งเพี้ยนเมื่อวางหลายบรรทัดพร้อมกัน ให้ส่งคำสั่งเป็นบรรทัดเดียวที่ต่อด้วย `&&`
 - **ข้อจำกัด:** งบ 12k ตัวอักษรประมาณเอา ยังไม่ได้วัด token จริง · รอบที่ปิดรับสมัครวันนี้ตอน 16:30 ยังแสดงจนจบวัน (ตั้งใจ: เทียบเป็นวัน) · ไฟล์ SQLite ไม่หดหลังลบ (SQLite ใช้พื้นที่ซ้ำเอง)
 
 ### ตรวจ `/v1/auth/users?include_activity_summary=1` สำหรับขั้นที่ 2 (อาจารย์) · 2026-10-22
