@@ -15,7 +15,7 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage
 
-from ..agent import message_text, run_config
+from ..agent import ANONYMOUS_SUBJECT, message_text, run_config
 from ..agent.errors import AgentError
 from ..data import ActApiError, get_act_client
 from ..tools import TOOL_STATUS
@@ -147,6 +147,10 @@ class StreamTranslator:
         elif mode == "updates":
             yield from self._handle_update(payload)
 
+    def learn_user_dates(self, text: str) -> None:
+        """วันที่ในคำถามของผู้ใช้ ตัวกรองจะไม่แก้วันที่เหล่านี้ (ดู `AnswerCleaner.learn_user_dates`)"""
+        self._cleaner.learn_user_dates(text)
+
     def flush(self) -> Iterator[dict[str, str]]:
         yield from self._emit(self._cleaner.feed(self._think.flush()))
         yield from self._emit(self._cleaner.flush())
@@ -209,15 +213,13 @@ class StreamTranslator:
 # ---- ตัว stream ของ POST /v1/chat ----
 
 
-ANONYMOUS_SUBJECT = "anonymous"
-
-
 async def chat_events(
     graph: Any, *, thread_id: str, message: str, jwt: str | None
 ) -> AsyncIterator[dict[str, str]]:
     """ยืนยันตัวตน → เรียก graph → ส่ง status/token/done (หรือ error แทน done)"""
     started = time.perf_counter()
     translator = StreamTranslator()
+    translator.learn_user_dates(message)
 
     try:
         # ยืนยันตัวตนก่อน แล้วผูกประวัติแชทไว้กับผู้ใช้คนนี้ (ได้แม้ยังไม่มีกรอบกิจกรรม)

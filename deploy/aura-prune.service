@@ -1,0 +1,21 @@
+# ลบประวัติแชทที่ไม่มีการใช้งานนาน (scripts/prune_threads.py) · ถูกเรียกโดย aura-prune.timer
+# ติดตั้งด้วย deploy/install.sh · ดูผล: journalctl -u aura-prune -n 20
+
+[Unit]
+Description=AURA-AGENT: ลบประวัติแชทที่ไม่มีการใช้งาน
+
+[Service]
+Type=oneshot
+User=aura
+Group=aura
+WorkingDirectory=/opt/aura-agent
+EnvironmentFile=/opt/aura-agent/.env
+ExecStart=/usr/local/bin/uv run --frozen --no-dev python scripts/prune_threads.py
+Environment=UV_CACHE_DIR=/opt/aura-agent/.uv-cache
+Environment=UV_PYTHON_INSTALL_DIR=/opt/aura-agent/.uv-python
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/aura-agent

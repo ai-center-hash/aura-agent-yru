@@ -11,6 +11,7 @@ from aura_agent.agent import (
     state_serializer,
     thread_key,
 )
+from aura_agent.agent.history import MAX_HISTORY_TURNS
 from aura_agent.processing import StudentProfile
 
 from .conftest import JWT, tool_call
@@ -117,6 +118,20 @@ async def test_second_question_reuses_student_within_ttl(act_client, frozen_toda
 
     assert act_client.names() == ["get_my_summary"]  # ไม่ดึงซ้ำเพราะข้อมูลยังใหม่
     assert len(state["messages"]) == 4  # human, ai, human, ai
+
+
+async def test_llm_gets_recent_history_but_state_keeps_all(act_client, frozen_today, llm):
+    """แชทยาวต้องไม่ส่งประวัติทั้งหมดให้โมเดล (เกิน num_ctx) แต่ประวัติใน state ยังอยู่ครบ"""
+    questions = MAX_HISTORY_TURNS + 2
+    fake = llm(*[AIMessage(f"ตอบ {index}") for index in range(questions)])
+    graph = graph_with_memory()
+
+    for index in range(questions):
+        state = await graph.ainvoke(*ask(f"ถาม {index}"))
+
+    sent = [m.content for m in fake.calls[-1]["messages"] if isinstance(m, HumanMessage)]
+    assert sent == [f"ถาม {index}" for index in range(2, questions)]
+    assert len(state["messages"]) == questions * 2
 
 
 async def test_stale_student_is_reloaded(act_client, frozen_today, llm, monkeypatch):

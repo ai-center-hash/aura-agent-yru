@@ -19,6 +19,7 @@ from ..processing import (
 )
 from ..tools import TOOLS, optional_jwt_from, tools_for
 from .errors import LLM_ERRORS, LLMUnavailable
+from .history import recent_messages
 from .llm import get_llm
 from .prompts import render_system_prompt
 from .state import MAX_TOOL_ROUNDS, STUDENT_TTL_S, AgentState
@@ -81,7 +82,7 @@ async def load_student(state: AgentState, config: RunnableConfig) -> dict[str, A
 async def agent(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
     """ให้ LLM ตัดสินใจว่าจะตอบเลยหรือเรียก tool
 
-    system prompt สร้างใหม่ทุกครั้งและไม่เก็บลง messages
+    system prompt สร้างใหม่ทุกครั้งและไม่เก็บลง messages · ส่งประวัติแค่ช่วงท้าย (ดู history.py)
     ถ้าเรียก tool ครบ `MAX_TOOL_ROUNDS` แล้วจะเรียก LLM แบบไม่ bind tools เพื่อบังคับให้ตอบ
     """
     llm = get_llm()
@@ -95,7 +96,9 @@ async def agent(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
     )
 
     try:
-        response = await model.ainvoke([SystemMessage(system_prompt), *state["messages"]], config)
+        response = await model.ainvoke(
+            [SystemMessage(system_prompt), *recent_messages(state["messages"])], config
+        )
     except LLM_ERRORS as error:
         raise LLMUnavailable(type(error).__name__) from error
     return {"messages": [response]}

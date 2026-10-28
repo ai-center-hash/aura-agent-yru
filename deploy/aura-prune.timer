@@ -1,0 +1,11 @@
+# รัน aura-prune.service วันละครั้งตอนตี 3 (ช่วงที่ไม่ค่อยมีคนใช้) · ติดตั้งด้วย deploy/install.sh
+
+[Unit]
+Description=AURA-AGENT: ลบประวัติแชทเก่าทุกวัน
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

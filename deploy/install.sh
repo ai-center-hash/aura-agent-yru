@@ -70,8 +70,11 @@ cd "$APP_DIR"
 as_app /usr/local/bin/uv sync --frozen --no-dev
 
 install -m 644 "$APP_DIR/deploy/aura-agent.service" /etc/systemd/system/aura-agent.service
+install -m 644 "$APP_DIR/deploy/aura-prune.service" /etc/systemd/system/aura-prune.service
+install -m 644 "$APP_DIR/deploy/aura-prune.timer" /etc/systemd/system/aura-prune.timer
 systemctl daemon-reload
 systemctl enable --quiet aura-agent
+systemctl enable --quiet --now aura-prune.timer  # ลบประวัติแชทเก่าทุกวัน (scripts/prune_threads.py)
 systemctl restart aura-agent
 
 echo "รอ service ขึ้น..."

@@ -9,6 +9,8 @@ from langgraph.prebuilt import tools_condition
 from .nodes import agent, load_student, tools
 from .state import AgentState
 
+ANONYMOUS_SUBJECT = "anonymous"  # subject ของผู้ใช้ที่ไม่ได้เข้าสู่ระบบ (ทุกคนใช้ร่วมกัน)
+
 
 def build_graph(checkpointer: BaseCheckpointSaver | None = None) -> CompiledStateGraph:
     builder = StateGraph(AgentState)
