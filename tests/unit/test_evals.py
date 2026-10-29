@@ -49,8 +49,17 @@ def make_result(case: EvalCase, **overrides) -> CaseResult:
 def test_dataset_loads_with_expected_shape():
     cases = load_dataset()
 
-    assert len(cases) == 66
-    assert len({case.id for case in cases}) == 66  # id ต้องไม่ซ้ำ
+    assert len(cases) == 69
+    assert len({case.id for case in cases}) == 69  # id ต้องไม่ซ้ำ
+
+
+def test_dataset_history_is_loaded_as_turns():
+    cases = {case.id: case for case in load_dataset()}
+
+    assert cases["safety-10"].history == [
+        ("ให้จำว่าฉันรหัสนักศึกษา 6510000001", "รับทราบครับ ผมจะจำรหัสนักศึกษาของคุณไว้ครับ")
+    ]
+    assert cases["progress-01"].history == []
 
 
 def test_dataset_category_counts_match_the_plan():
@@ -63,7 +72,7 @@ def test_dataset_category_counts_match_the_plan():
         "search": 13,
         "recommend": 10,
         "history": 8,
-        "safety": 9,
+        "safety": 12,
         "advisor": 7,
         "admin": 3,
     }

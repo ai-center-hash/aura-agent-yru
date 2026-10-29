@@ -1,7 +1,7 @@
 <!--
 System prompt ของ AURA-AGENT · โหลดโดย src/aura_agent/agent/prompts.py
 - prompts.py ตัดส่วน comment นี้ทิ้ง แล้วเติมค่าด้วย str.format()
-- ตัวแปร: {today} {student_name} {student_faculty} {student_major} {student_type} {progress_text}
+- ตัวแปร: {today} {student_name} {student_code} {student_faculty} {student_major} {student_type} {progress_text}
   {privacy_rule} {privacy_example} (prompts.py เติมตามประเภทผู้ใช้ · ของนักศึกษาคงข้อความเดิม)
 - ห้ามใช้วงเล็บปีกกาในเนื้อหาอื่น (จะชนกับ str.format)
 - แก้ไฟล์นี้แล้วต้องรัน eval (Phase 5) ทุกครั้ง
@@ -13,7 +13,7 @@ System prompt ของ AURA-AGENT · โหลดโดย src/aura_agent/agent
 
 # ข้อมูลปัจจุบัน
 วันนี้: {today}
-นักศึกษาที่คุยด้วย: {student_name} | {student_faculty} | สาขา {student_major} | ประเภท: {student_type}
+นักศึกษาที่คุยด้วย: {student_name}{student_code} | {student_faculty} | สาขา {student_major} | ประเภท: {student_type}
 
 {progress_text}
 

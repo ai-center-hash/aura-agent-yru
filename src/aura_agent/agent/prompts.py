@@ -5,15 +5,19 @@
 """
 
 import re
+from collections.abc import Sequence
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
+
+from langchain_core.messages import BaseMessage, HumanMessage
 
 from ..processing import StudentProfile, thai_date
 
 PROMPT_PATH = Path(__file__).parents[3] / "prompts" / "system_prompt.th.md"
 
 _LEADING_COMMENT = re.compile(r"\A\s*<!--.*?-->\s*", re.DOTALL)
+_CODE_LIKE = re.compile(r"(?<!\d)\d{9,10}(?!\d)")  # แบบเดียวกับ STUDENT_CODE ของ tools/advisees.py
 
 UNKNOWN_NAME = "ไม่ทราบชื่อ"
 UNKNOWN_FIELD = "ไม่ระบุ"
@@ -70,12 +74,17 @@ def render_system_prompt(
     student: StudentProfile | None,
     progress_text: str | None,
     *,
+    show_code: bool = False,
     template: str | None = None,
 ) -> str:
-    """เติมค่าลง prompt ใหม่ทุกครั้งที่เรียก LLM (ไม่เก็บลง messages) · ทุกบทบาทใช้ prompt เดียวกัน"""
+    """เติมค่าลง prompt ใหม่ทุกครั้งที่เรียก LLM (ไม่เก็บลง messages) · ทุกบทบาทใช้ prompt เดียวกัน
+
+    `show_code`: ใส่รหัสนักศึกษาจริงต่อท้ายชื่อ (ดู `mentions_student_code`)
+    """
     return (template or load_template()).format(
         today=f"{thai_date(today)} ({today.isoformat()})",
         student_name=student.name if student else UNKNOWN_NAME,
+        student_code=_student_code(student) if show_code else "",
         student_faculty=(student.faculty if student else None) or UNKNOWN_FIELD,
         student_major=(student.major if student else None) or UNKNOWN_FIELD,
         student_type=_student_type(student),
@@ -93,6 +102,27 @@ def _privacy(student: StudentProfile | None) -> dict[str, str]:
     if student is not None and not student.is_student:
         return {"privacy_rule": STAFF_PRIVACY_RULE, "privacy_example": STAFF_PRIVACY_EXAMPLE}
     return {"privacy_rule": STUDENT_PRIVACY_RULE, "privacy_example": STUDENT_PRIVACY_EXAMPLE}
+
+
+def mentions_student_code(messages: Sequence[BaseMessage]) -> bool:
+    """ผู้ใช้พิมพ์ตัวเลขแบบรหัสนักศึกษาในบทสนทนาหรือไม่
+
+    tester บอกให้บอท "จำ" รหัสของคนอื่น โมเดลไม่รู้รหัสจริงจึงตอบชื่อจริงคู่กับรหัสที่อ้าง (2026-10-29)
+    ใส่รหัสจริงเฉพาะบทสนทนาแบบนี้ เพราะใส่ทุกครั้งแล้วข้อ eval อื่นพลิก (progress-15, recommend-09)
+    """
+    return any(
+        isinstance(message, HumanMessage)
+        and isinstance(message.content, str)
+        and _CODE_LIKE.search(message.content)
+        for message in messages
+    )
+
+
+def _student_code(student: StudentProfile | None) -> str:
+    """รหัสจริงจาก token · บุคลากรและผู้ใช้ทั่วไปไม่มีรหัส จึงได้ prompt เหมือนเดิมทุกตัวอักษร"""
+    if student is None or not student.is_student or not student.student_id:
+        return ""
+    return f" (รหัส {student.student_id})"
 
 
 def _student_type(student: StudentProfile | None) -> str:

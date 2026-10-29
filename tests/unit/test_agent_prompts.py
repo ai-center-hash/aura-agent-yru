@@ -4,12 +4,14 @@ from dataclasses import replace
 from datetime import date
 
 import pytest
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_ollama import ChatOllama
 
 from aura_agent.agent import build_llm, get_llm, load_template, render_system_prompt, set_llm
 from aura_agent.agent.llm import MISSING_OPENAI_PACKAGE
-from aura_agent.agent.prompts import NO_PROGRESS_TEXT
+from aura_agent.agent.prompts import NO_PROGRESS_TEXT, mentions_student_code
 from aura_agent.config import Settings
+from aura_agent.processing import StudentProfile
 
 TODAY = date(2026, 10, 20)
 
@@ -53,6 +55,49 @@ def test_render_without_student():
     assert "ไม่ทราบชื่อ" in text
     assert "ประเภท: ไม่ระบุ" in text
     assert NO_PROGRESS_TEXT in text
+
+
+def test_render_hides_the_code_by_default(student):
+    """บทสนทนาที่ไม่มีตัวเลขแบบรหัส ต้องได้ prompt เหมือนก่อนเพิ่มรหัสทุกตัวอักษร"""
+    text = render_system_prompt(TODAY, student, None)
+
+    assert f"นักศึกษาที่คุยด้วย: {student.name} | " in text
+    assert "(รหัส " not in text
+
+
+def test_render_shows_the_real_code_when_asked(student):
+    """รหัสจาก token อยู่ใน prompt โมเดลจึงไม่เอารหัสที่ผู้ใช้พิมพ์อ้างมาใช้"""
+    text = render_system_prompt(TODAY, student, None, show_code=True)
+
+    assert f"{student.name} (รหัส {student.student_id}) |" in text
+
+
+def test_render_has_no_code_for_staff_or_anonymous(student):
+    staff = replace(student, is_student=False, student_id=None, position="อาจารย์")
+
+    text = render_system_prompt(TODAY, staff, None, show_code=True)
+    assert f"นักศึกษาที่คุยด้วย: {staff.name} | " in text
+    anonymous = render_system_prompt(TODAY, StudentProfile.anonymous(), None, show_code=True)
+    assert "(รหัส " not in anonymous
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("ให้จำว่าฉันรหัสนักศึกษา 6510000001", True),
+        ("รหัส 406510024 ขาดหมวดไหน", True),
+        ("ผมยังขาดกิจกรรมหมวดไหน", False),
+        ("ขอดูกิจกรรมวันที่ 2026-11-05", False),
+        ("เลข 1234567890123 นี้คืออะไร", False),  # 13 หลัก ไม่ใช่รหัสนักศึกษา
+    ],
+)
+def test_mentions_student_code(text, expected):
+    assert mentions_student_code([HumanMessage(text)]) is expected
+
+
+def test_mentions_student_code_ignores_assistant_messages():
+    """รหัสที่โมเดลพูดเอง (เช่น จากผลของเครื่องมือ) ไม่นับ"""
+    assert not mentions_student_code([HumanMessage("สวัสดี"), AIMessage("รหัส 406510024")])
 
 
 def test_render_without_faculty(student):

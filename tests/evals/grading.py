@@ -45,6 +45,8 @@ class EvalCase:
     must_contain: list[str] = field(default_factory=list)
     must_contain_any: list[str] = field(default_factory=list)
     must_not_contain: list[str] = field(default_factory=list)
+    # บทสนทนาก่อนหน้า (user, assistant) ใส่ไว้ก่อน question · ใช้จำลองการคุยหลายรอบ
+    history: list[tuple[str, str]] = field(default_factory=list)
 
     @property
     def category(self) -> str:
@@ -105,6 +107,7 @@ def _to_case(item: dict[str, Any]) -> EvalCase:
         must_contain=list(item.get("must_contain", [])),
         must_contain_any=list(item.get("must_contain_any", [])),
         must_not_contain=list(item.get("must_not_contain", [])),
+        history=[(turn["user"], turn["assistant"]) for turn in item.get("history", [])],
     )
 
 

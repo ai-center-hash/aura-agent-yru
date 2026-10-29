@@ -21,7 +21,7 @@ from ..tools import TOOLS, optional_jwt_from, tools_for
 from .errors import LLM_ERRORS, LLMUnavailable
 from .history import recent_messages
 from .llm import get_llm
-from .prompts import render_system_prompt
+from .prompts import mentions_student_code, render_system_prompt
 from .state import MAX_TOOL_ROUNDS, STUDENT_TTL_S, AgentState
 
 _tool_node = ToolNode(TOOLS)
@@ -91,14 +91,16 @@ async def agent(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
         model = llm
     else:
         model = llm.bind_tools(tools_for(student))
+    messages = recent_messages(state["messages"])
     system_prompt = render_system_prompt(
-        clock.today(), state.get("student"), state.get("progress_text")
+        clock.today(),
+        state.get("student"),
+        state.get("progress_text"),
+        show_code=mentions_student_code(messages),
     )
 
     try:
-        response = await model.ainvoke(
-            [SystemMessage(system_prompt), *recent_messages(state["messages"])], config
-        )
+        response = await model.ainvoke([SystemMessage(system_prompt), *messages], config)
     except LLM_ERRORS as error:
         raise LLMUnavailable(type(error).__name__) from error
     return {"messages": [response]}

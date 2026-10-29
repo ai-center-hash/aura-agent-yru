@@ -20,7 +20,7 @@ from pathlib import Path
 if __package__ in (None, ""):  # รันเป็น script: ให้ import tests.evals.* ได้
     sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
 from aura_agent import clock
@@ -100,7 +100,7 @@ async def run_case(graph, case: EvalCase, client: PersonaClient) -> CaseResult:
 
     try:
         stream = graph.astream(
-            {"messages": [HumanMessage(case.question)], "tool_rounds": 0},
+            {"messages": [*_history(case), HumanMessage(case.question)], "tool_rounds": 0},
             run_config(
                 user_id=client.persona.subject,
                 thread_id=case.id,
@@ -245,6 +245,14 @@ def dump_results(
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _history(case: EvalCase) -> list[HumanMessage | AIMessage]:
+    return [
+        message
+        for user, assistant in case.history
+        for message in (HumanMessage(user), AIMessage(assistant))
+    ]
 
 
 def _elapsed_ms(started: float) -> int:
