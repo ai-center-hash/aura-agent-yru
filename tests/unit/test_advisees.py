@@ -245,6 +245,10 @@ class FakeAdvisorClient:
             raise NotYourAdvisee("x")
         return advisee, self.summary
 
+    async def is_admin(self, jwt):
+        self.calls.append("is_admin")
+        return False
+
     async def get_my_summary(self, jwt):
         from aura_agent.data import NotAStudent
 

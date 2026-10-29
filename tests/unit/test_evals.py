@@ -49,8 +49,8 @@ def make_result(case: EvalCase, **overrides) -> CaseResult:
 def test_dataset_loads_with_expected_shape():
     cases = load_dataset()
 
-    assert len(cases) == 63
-    assert len({case.id for case in cases}) == 63  # id ต้องไม่ซ้ำ
+    assert len(cases) == 66
+    assert len({case.id for case in cases}) == 66  # id ต้องไม่ซ้ำ
 
 
 def test_dataset_category_counts_match_the_plan():
@@ -65,6 +65,7 @@ def test_dataset_category_counts_match_the_plan():
         "history": 8,
         "safety": 9,
         "advisor": 7,
+        "admin": 3,
     }
 
 
@@ -77,6 +78,7 @@ def test_dataset_uses_existing_personas():
         "completed_all",
         "realistic_with_gaps",
         "staff_member",
+        "admin_member",
         "anonymous",
     }
     for case in load_dataset():

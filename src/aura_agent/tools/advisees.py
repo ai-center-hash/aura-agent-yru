@@ -3,6 +3,8 @@
 **ข้อยกเว้นของกฎ "tool ห้ามรับรหัสนักศึกษา"** (ตกลงกับผู้ดูแลโปรเจกต์ 2026-10-22)
 `get_advisee_progress` รับรหัสนักศึกษาได้ เพราะ `ActClient.get_advisee_summary` ตรวจทุกครั้งว่ารหัสนั้น
 อยู่ในรายชื่อที่ปรึกษาของเจ้าของ token (ระบุอาจารย์จาก Passport ไม่ใช่จากข้อความ) ไม่อยู่ → ไม่ดึงข้อมูลเลย
+ยกเว้นผู้ดูแลระบบกิจกรรม (role `admin` · ตัดสิน 2026-10-29) ซึ่ง `ActClient.get_student_summary_as_admin`
+ตรวจ `is_admin` ซ้ำทุกครั้งก่อนดึง และบันทึก audit log
 ผู้ใช้ทุกบทบาทเห็น tool ชุดเดียวกัน (ตัดสิน 2026-10-22) tool จึงเช็คบทบาทเองทุกครั้ง
 """
 
@@ -13,7 +15,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 
-from ..data import NoActivityFrame, NotYourAdvisee, get_act_client
+from ..data import NoActivityFrame, NotYourAdvisee, UpstreamNotFound, get_act_client
 from ..processing import analyze_gaps, format_advisee_progress, format_advisees
 from .context import LOGIN_REQUIRED_MESSAGE, NO_STUDENT_MESSAGE, jwt_from, student_from
 
@@ -31,6 +33,8 @@ NO_FRAME_MESSAGE = (
     "นักศึกษา {code} อยู่ในที่ปรึกษา แต่ระบบกิจกรรมยังไม่มีกรอบกิจกรรมสำหรับนักศึกษาคนนี้ ({reason})"
     " จึงยังดูความคืบหน้าไม่ได้"
 )
+ADMIN_NO_FRAME_MESSAGE = "ระบบกิจกรรมยังไม่มีกรอบกิจกรรมสำหรับนักศึกษา {code} ({reason}) จึงยังดูความคืบหน้าไม่ได้"
+NOT_FOUND_MESSAGE = "ไม่พบรหัสนักศึกษา {code} ในระบบกิจกรรม ให้บอกผู้ใช้ว่าไม่พบรหัสนี้ และห้ามเดาข้อมูล"
 
 
 @tool
@@ -87,10 +91,21 @@ async def get_advisee_progress(
     if not STUDENT_CODE.match(code):
         return BAD_CODE_MESSAGE.format(value=student_code)
 
+    client = get_act_client()
+    jwt = jwt_from(config)
+    as_admin = False
     try:
-        advisee, summary = await get_act_client().get_advisee_summary(jwt_from(config), code)
-    except NotYourAdvisee:
-        return NOT_ADVISEE_MESSAGE.format(code=code)
+        try:
+            advisee, summary = await client.get_advisee_summary(jwt, code)
+        except NotYourAdvisee:
+            # ไม่อยู่ในที่ปรึกษา: ดูต่อได้เฉพาะผู้ดูแลระบบ (get_student_summary_as_admin ตรวจซ้ำอีกชั้น)
+            if not await client.is_admin(jwt):
+                return NOT_ADVISEE_MESSAGE.format(code=code)
+            as_admin = True
+            advisee, summary = await client.get_student_summary_as_admin(jwt, code)
+    except UpstreamNotFound:
+        return NOT_FOUND_MESSAGE.format(code=code)
     except NoActivityFrame as missing:
-        return NO_FRAME_MESSAGE.format(code=code, reason=missing.detail or missing.message_th)
-    return format_advisee_progress(advisee, analyze_gaps(summary))
+        message = ADMIN_NO_FRAME_MESSAGE if as_admin else NO_FRAME_MESSAGE
+        return message.format(code=code, reason=missing.detail or missing.message_th)
+    return format_advisee_progress(advisee, analyze_gaps(summary), as_admin=as_admin)

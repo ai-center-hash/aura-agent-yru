@@ -1,0 +1,184 @@
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 960301,
+      "name": "วิภาวี สมมติขึ้น",
+      "student_id": "406600301",
+      "email": "406600301@example.test",
+      "level": "ปริญญาตรี",
+      "major": "วิทยาการคอมพิวเตอร์",
+      "faculty": "คณะวิทยาศาสตร์และเทคโนโลยี",
+      "student_status": "normal"
+    },
+    "frame": {
+      "id": 3,
+      "title": "กรอบกิจกรรมพัฒนานักศึกษา ประจำปีการศึกษา 2565-2568",
+      "start_date": "2022-06-01",
+      "end_date": "2026-05-31",
+      "is_restricted": true,
+      "target_student_year_prefix": [
+        "65"
+      ],
+      "target_student_status": null
+    },
+    "summary": {
+      "total_activities": 5,
+      "total_hours": 27.5,
+      "overall_status": "in_progress"
+    },
+    "categories": [
+      {
+        "category_id": 1,
+        "category_name": "กิจกรรมเสริมสร้างคุณธรรม จริยธรรม และค่านิยม",
+        "category_description": "กิจกรรมด้านคุณธรรม",
+        "type_id": 1,
+        "type_name": "กิจกรรมบังคับ",
+        "frame_items": [
+          {
+            "id": 10,
+            "category_id": 1,
+            "category_name": "กิจกรรมเสริมสร้างคุณธรรม จริยธรรม และค่านิยม",
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 6,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 3
+            },
+            "count": 2,
+            "total_hours": 6.0,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 45,
+                "title": "กิจกรรมปฐมนิเทศนักศึกษาใหม่ ประจำปีการศึกษา 2568",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-06-20 08:50:12",
+                "checkout_at": "2025-06-20 12:05:40",
+                "joined_year": "65",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 51,
+                "title": "อบรมคุณธรรมนำความรู้",
+                "duration_hours": 3.0,
+                "attendance_hours": 3.0,
+                "checkin_at": "2025-08-02 09:02:00",
+                "checkout_at": "2025-08-02 12:10:00",
+                "joined_year": "65",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "category_id": 2,
+        "category_name": "กิจกรรมจิตอาสาและบำเพ็ญประโยชน์",
+        "type_id": 1,
+        "type_name": "กิจกรรมบังคับ",
+        "frame_items": [
+          {
+            "id": 11,
+            "category_id": 2,
+            "category_name": "กิจกรรมจิตอาสาและบำเพ็ญประโยชน์",
+            "requirement": {
+              "normal_activity_min": 3,
+              "normal_hour_min": 12,
+              "transfer_activity_min": 2,
+              "transfer_hour_min": 6
+            },
+            "count": 1,
+            "total_hours": 4.0,
+            "is_passed": false,
+            "activities": [
+              {
+                "id": 62,
+                "title": "จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย",
+                "duration_hours": 4.0,
+                "attendance_hours": 4.0,
+                "checkin_at": "2025-11-15 08:30:00",
+                "checkout_at": "2025-11-15 12:45:00",
+                "joined_year": "65",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "category_id": 5,
+        "category_name": "กิจกรรมส่งเสริมสุขภาพและกีฬา",
+        "type_id": 2,
+        "type_name": "กิจกรรมเลือก",
+        "frame_items": [
+          {
+            "id": 12,
+            "category_id": 5,
+            "category_name": "กิจกรรมส่งเสริมสุขภาพและกีฬา",
+            "requirement": {
+              "normal_activity_min": 2,
+              "normal_hour_min": 6,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 3
+            },
+            "count": 0,
+            "total_hours": 0,
+            "is_passed": false,
+            "activities": []
+          }
+        ]
+      },
+      {
+        "category_id": 7,
+        "category_name": "กิจกรรมส่งเสริมทักษะวิชาการและวิชาชีพ",
+        "type_id": 2,
+        "type_name": "กิจกรรมเลือก",
+        "frame_items": [
+          {
+            "id": 13,
+            "category_id": 7,
+            "category_name": "กิจกรรมส่งเสริมทักษะวิชาการและวิชาชีพ",
+            "requirement": {
+              "normal_activity_min": 1,
+              "normal_hour_min": 3,
+              "transfer_activity_min": 1,
+              "transfer_hour_min": 3
+            },
+            "count": 2,
+            "total_hours": 17.5,
+            "is_passed": true,
+            "activities": [
+              {
+                "id": 70,
+                "title": "อบรมเขียนโปรแกรมด้วย Python เบื้องต้น",
+                "duration_hours": 6.0,
+                "attendance_hours": 6.0,
+                "checkin_at": "2026-01-10 08:45:00",
+                "checkout_at": "2026-01-10 16:00:00",
+                "joined_year": "65",
+                "occurrence_index": 1,
+                "occurrence_total": 1
+              },
+              {
+                "id": 71,
+                "title": "อบรมการใช้งานฐานข้อมูลเพื่องานวิจัย",
+                "duration_hours": 11.5,
+                "attendance_hours": 11.5,
+                "checkin_at": "2026-02-14 08:40:00",
+                "checkout_at": "2026-02-15 16:10:00",
+                "joined_year": "65",
+                "occurrence_index": 1,
+                "occurrence_total": 5
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -5,6 +5,7 @@ from .base import ActModel
 from .passport import PassportUser
 from .registration import Registration, RegistrationActivity, RegistrationSchedule
 from .schedule import Schedule, ScheduleActivity
+from .staff import StaffAccount
 from .summary import (
     ActivityFrame,
     AttendedActivity,
@@ -30,6 +31,7 @@ __all__ = [
     "RegistrationSchedule",
     "Schedule",
     "ScheduleActivity",
+    "StaffAccount",
     "StudentSummary",
     "SummaryCategory",
     "SummaryTotals",

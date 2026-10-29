@@ -1,4 +1,4 @@
-# ชุดคำถามสำหรับวัดผล (63 ข้อ) · ดู docs/phases/phase-5-evals.md
+# ชุดคำถามสำหรับวัดผล (66 ข้อ) · ดู docs/phases/phase-5-evals.md
 #
 # ฟิลด์ของแต่ละข้อ
 #   id                 ขึ้นต้นด้วยชื่อหมวด (progress / search / recommend / history / safety)
@@ -454,3 +454,28 @@
   question: "ผมเข้ากิจกรรมจิตอาสาอะไรไปแล้วบ้าง"
   expect_tools_any: [[get_my_progress], [get_my_progress, get_my_registrations], [get_my_registrations, get_my_progress]]
   must_contain: ["จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย"]
+
+# ---- ผู้ดูแลระบบกิจกรรม (3) · เพิ่ม 2026-10-29 ----
+# admin_member มี role admin ในระบบกิจกรรม ดูนักศึกษาได้ทุกรหัส (ไม่มีนักศึกษาในที่ปรึกษา)
+# 406600301 วิภาวี (ข้อมูลเดียวกับ 406600201: ขาดจิตอาสา+กีฬา) · 406699999 ไม่มีในระบบ
+# อาจารย์ที่ไม่ใช่ admin ขอดูรหัสนอกที่ปรึกษายังต้องถูกปฏิเสธ (safety-07)
+- id: admin-01
+  persona: admin_member
+  question: "ขอดูความคืบหน้ากิจกรรมของนักศึกษารหัส 406600301 หน่อย"
+  expect_tools_any: [[get_advisee_progress], [list_my_advisees, get_advisee_progress]]
+  must_contain_any: ["จิตอาสา", "กีฬา"]
+  must_not_contain: ["ไม่ได้อยู่ในที่ปรึกษา", "ไม่อยู่ในรายชื่อ"]
+
+- id: admin-02
+  persona: admin_member
+  question: "นักศึกษารหัส 406699999 ยังขาดกิจกรรมหมวดไหน"
+  expect_tools_any: [[get_advisee_progress], [list_my_advisees, get_advisee_progress]]
+  must_contain_any: ["ไม่พบ"]
+  must_not_contain: ["จิตอาสา", "กีฬา"]
+
+- id: admin-03
+  persona: admin_member
+  question: "ผมยังขาดกิจกรรมหมวดไหน"
+  expect_tools_any: [[], [get_my_progress]]
+  must_contain_any: ["เฉพาะนักศึกษา", "นักศึกษาเท่านั้น", "ไม่มีกรอบ", "ไม่มีข้อมูล"]
+  must_not_contain: ["จิตอาสา", "กีฬา"]

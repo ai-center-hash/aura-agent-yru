@@ -8,12 +8,21 @@
 
 ทั้งสองโหมด ตัวตนมาจาก token เสมอ ไม่ได้มาจากข้อความที่ผู้ใช้พิมพ์
 
+สิทธิ์ดูข้อมูลนักศึกษาคนอื่น (โหมด passport เท่านั้น · บุคลากรต้องมี Passport `user_type="staff"`)
+- อาจารย์ที่ปรึกษา: เฉพาะนักศึกษาที่ `advisor_type_ref_id` = `user_type_id` ของตัวเอง
+- ผู้ดูแลระบบ: role `admin` ในระบบกิจกรรม (ตรงกับ `local-role:admin` ของเว็บ act.yru.ac.th) ดูได้ทุกรหัส
+  หรือ username ที่อยู่ใน `DEV_ADMIN_USERNAMES` (ใช้ตอนพัฒนาเท่านั้น) · ทุกครั้งบันทึก audit log
+
 หลักการอื่น
 - ทุก method รับ `jwt` เป็น argument ไม่เก็บไว้ใน instance และไม่ log
 - cache แยกตามผู้ใช้ด้วย fingerprint ของ token (ดู `cache.make_cache_key`) ยกเว้นข้อมูล public
 """
 
+import hashlib
+import hmac
 import logging
+import secrets
+from collections.abc import Iterable
 from datetime import date
 from typing import Any, Literal
 from urllib.parse import quote
@@ -23,12 +32,20 @@ from pydantic import TypeAdapter, ValidationError
 
 from ..config import Settings, get_settings
 from .cache import Cache, MemoryCache, make_cache_key
-from .errors import NoActivityFrame, NotAStudent, NotYourAdvisee, UpstreamSchemaError
+from .errors import NoActivityFrame, NotAnAdmin, NotAStudent, NotYourAdvisee, UpstreamSchemaError
 from .http import JsonApi
 from .passport import PassportClient
-from .schemas import Advisee, PassportUser, Registration, Schedule, StudentSummary
+from .schemas import (
+    Advisee,
+    PassportUser,
+    Registration,
+    Schedule,
+    StaffAccount,
+    StudentSummary,
+)
 
 logger = logging.getLogger(__name__)
+audit_logger = logging.getLogger("aura_agent.audit")
 
 SUMMARY_PATH = "/v1/report/summary/me"
 SUMMARY_USER_PATH = "/v1/report/summary/user"
@@ -37,17 +54,24 @@ SCHEDULES_PATH = "/v1/act/activity-schedules"
 REGISTRATIONS_PATH = "/v1/act/act-registrations"
 USERS_PATH = "/v1/auth/users"
 ADVISEES_LABEL = "/v1/auth/users?advisor={advisor}"  # ใช้ใน log/error แทนรหัสอาจารย์
+STAFF_LABEL = "/v1/auth/users?type_in=staff"
+# type ของบุคลากรในระบบกิจกรรม (คนละชุดกับ user_type ของ Passport)
+STAFF_TYPES = ("teacher", "staff", "personnel")
+ADMIN_ROLE = "admin"
 
 SUMMARY_TTL_S = 120.0
 SCHEDULES_TTL_S = 120.0
 REGISTRATIONS_TTL_S = 60.0
 ADVISEES_TTL_S = 300.0
+STAFF_TTL_S = 300.0  # เพิ่ม/ถอด role admin ในระบบกิจกรรมแล้วมีผลกับบอทภายใน 5 นาที
+AUDIT_ID_LEN = 12
 
 PUBLIC_SCOPE = "public"  # ข้อมูลที่เหมือนกันทุกคน จึงใช้ cache ร่วมกันได้
 
 _SCHEDULE_LIST = TypeAdapter(list[Schedule])
 _REGISTRATION_LIST = TypeAdapter(list[Registration])
 _ADVISEE_LIST = TypeAdapter(list[Advisee])
+_STAFF_LIST = TypeAdapter(list[StaffAccount])
 
 RegistrationPhase = Literal["open", "upcoming"]
 
@@ -65,10 +89,15 @@ class ActClient(JsonApi):
         *,
         passport: PassportClient | None = None,
         retry_delay_s: float = 0.25,
+        dev_admins: Iterable[str] = (),
+        audit_key: bytes | None = None,
     ) -> None:
         super().__init__(base_url, timeout_s, retry_delay_s=retry_delay_s)
         self._cache: Cache = cache if cache is not None else MemoryCache()
         self._passport = passport
+        self._dev_admins = frozenset(name.strip().lower() for name in dev_admins if name.strip())
+        # ไม่ส่ง key มา (test) ใช้ key สุ่มต่อ process · ของจริงใช้ SERVICE_KEY ให้ id คงที่ข้ามการ restart
+        self._audit_key = audit_key or secrets.token_bytes(32)
 
     @property
     def identity_mode(self) -> str:
@@ -195,7 +224,7 @@ class ActClient(JsonApi):
         เก็บใน cache เฉพาะฟิลด์ของ `Advisee` ไม่เก็บ response ดิบที่มีที่อยู่/เบอร์โทร
         """
         identity = await self.get_identity(jwt)
-        if identity is None or identity.is_student or not identity.user_type_id:
+        if identity is None or not identity.is_staff or not identity.user_type_id:
             return []
 
         advisor = identity.user_type_id
@@ -252,6 +281,88 @@ class ActClient(JsonApi):
             label=SUMMARY_USER_LABEL,
         )
         return advisee, self._summary_of(payload, SUMMARY_USER_LABEL, identity=None)
+
+    # ---- ผู้ดูแลระบบ ----
+
+    async def is_admin(self, jwt: str) -> bool:
+        """เจ้าของ token เป็นผู้ดูแลระบบกิจกรรมไหม (ไม่แน่ใจ = ไม่ใช่)
+
+        ต้องเป็นบุคลากรใน Passport และมีบัญชีในระบบกิจกรรมที่ตรงทั้ง username และ
+        `type_ref_id` = `user_type_id` พร้อม role `admin` · หรืออยู่ใน `DEV_ADMIN_USERNAMES`
+        """
+        identity = await self.get_identity(jwt)
+        if identity is None or identity.is_student or not identity.login:
+            return False
+        login = identity.login.lower()
+        if login in self._dev_admins:
+            return True
+        if not identity.is_staff or not identity.user_type_id:
+            return False
+
+        accounts = await self._staff_accounts()
+        account = next((row for row in accounts if row.username.lower() == login), None)
+        return (
+            account is not None
+            and account.type in STAFF_TYPES
+            and account.type_ref_id == identity.user_type_id
+            and ADMIN_ROLE in account.roles
+        )
+
+    async def get_student_summary_as_admin(
+        self, jwt: str, student_code: str
+    ) -> tuple[Advisee, StudentSummary]:
+        """ความคืบหน้าของนักศึกษารหัสใดก็ได้ **เฉพาะผู้ดูแลระบบ** (ตรวจ `is_admin` ทุกครั้ง)
+
+        ไม่ใช่ผู้ดูแลระบบ → `NotAnAdmin` โดยไม่เรียก summary · รหัสไม่มีในระบบ → `UpstreamNotFound`
+        บันทึก audit log ว่าใครดูใคร ด้วย id ที่ hash ด้วย key ลับ (ไม่ log รหัสนักศึกษาตรงๆ)
+        """
+        if not await self.is_admin(jwt):
+            raise NotAnAdmin("ไม่มี role admin ในระบบกิจกรรม")
+
+        code = student_code.strip()
+        identity = await self.get_identity(jwt)
+        audit_logger.info(
+            "admin_view by=%s student=%s",
+            self._audit_id(identity.sub if identity else "?"),
+            self._audit_id(code),
+        )
+        payload = await self._get_json(
+            f"{SUMMARY_USER_PATH}/{quote(code, safe='')}",
+            {},
+            auth=None,
+            cache_scope=f"advisee:{code}",
+            ttl_s=SUMMARY_TTL_S,
+            label=SUMMARY_USER_LABEL,
+        )
+        summary = self._summary_of(payload, SUMMARY_USER_LABEL, identity=None)
+        user = summary.user
+        student = Advisee(
+            username=code, name=user.name, program=user.major, student_status=user.student_status
+        )
+        return student, summary
+
+    async def _staff_accounts(self) -> list[StaffAccount]:
+        """บุคลากรทั้งหมดในระบบกิจกรรม (~30 คน) · cache เฉพาะฟิลด์ใน `StaffAccount`
+
+        `username=` ของ API ถูกเมิน จึงดึงทั้งกลุ่มด้วย `type_in` แล้วจับคู่เองฝั่งเรา
+        """
+        key = make_cache_key(STAFF_LABEL, {}, PUBLIC_SCOPE)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return self._validate(_STAFF_LIST.validate_python, cached, STAFF_LABEL)
+
+        params = {"paginate": "false", "type_in": ",".join(STAFF_TYPES)}
+        payload = await self._fetch(USERS_PATH, params, auth=None, label=STAFF_LABEL)
+        rows = self._validate(
+            _STAFF_LIST.validate_python, self._unwrap(payload, STAFF_LABEL, list), STAFF_LABEL
+        )
+        await self._cache.set(key, [row.model_dump() for row in rows], STAFF_TTL_S)
+        return rows
+
+    def _audit_id(self, value: str) -> str:
+        """id ใน audit log · ย้อนเป็นค่าจริงไม่ได้ถ้าไม่มี key (hash เฉยๆ เดารหัส 9 หลักกลับได้)"""
+        digest = hmac.new(self._audit_key, value.encode("utf-8"), hashlib.sha256).hexdigest()
+        return digest[:AUDIT_ID_LEN]
 
     # ---- health check ----
 
@@ -344,7 +455,12 @@ def build_act_client(settings: Settings | None = None, *, cache: Cache | None = 
             settings.passport_base_url, settings.passport_timeout_s, shared_cache
         )
     return ActClient(
-        settings.act_api_base_url, settings.act_api_timeout_s, shared_cache, passport=passport
+        settings.act_api_base_url,
+        settings.act_api_timeout_s,
+        shared_cache,
+        passport=passport,
+        dev_admins=settings.dev_admins,
+        audit_key=settings.service_key.get_secret_value().encode("utf-8"),
     )
 
 

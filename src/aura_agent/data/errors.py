@@ -41,6 +41,12 @@ class UpstreamRejected(ActApiError):
     message_th = "ระบบกิจกรรมไม่รับคำขอนี้ครับ ถ้ายังเจออยู่รบกวนแจ้งกองพัฒนานักศึกษา"
 
 
+class UpstreamNotFound(UpstreamRejected):
+    """Activity API ตอบ 404 เช่น ขอ summary ของรหัสที่ไม่มีในระบบ (tool แปลงเป็นข้อความว่าไม่พบ)"""
+
+    message_th = "ไม่พบข้อมูลที่ขอในระบบกิจกรรมครับ"
+
+
 class UpstreamSchemaError(ActApiError):
     """response ของ Activity API ไม่ตรงกับ schema ที่เราคาดไว้"""
 
@@ -75,6 +81,13 @@ class NotYourAdvisee(ActApiError):
 
     code = "NOT_YOUR_ADVISEE"
     message_th = "นักศึกษาคนนี้ไม่ได้อยู่ในรายชื่อนักศึกษาในที่ปรึกษาของคุณครับ จึงดูข้อมูลไม่ได้"
+
+
+class NotAnAdmin(ActApiError):
+    """ขอดูนักศึกษานอกที่ปรึกษาด้วยสิทธิ์ผู้ดูแลระบบ แต่เจ้าของ token ไม่มี role `admin` ในระบบกิจกรรม"""
+
+    code = "NOT_ADMIN"
+    message_th = "ส่วนนี้ใช้ได้เฉพาะผู้ดูแลระบบกิจกรรมครับ"
 
 
 class NoActivityFrame(ActApiError):

@@ -1,7 +1,8 @@
 """แกนกลางของการเรียก HTTP แบบ JSON ที่ `ActClient` และ `PassportClient` ใช้ร่วมกัน
 
 - ยิงใหม่ 1 ครั้งเฉพาะ timeout/5xx ส่วน 4xx ไม่ยิงใหม่ (ยิงอีกก็ได้ผลเดิม)
-- 401 → `TokenExpired` · 4xx อื่น → `UpstreamRejected` · ยิงไม่สำเร็จ → `unavailable_error`
+- 401 → `TokenExpired` · 404 → `UpstreamNotFound` · 4xx อื่น → `UpstreamRejected`
+  · ยิงไม่สำเร็จ → `unavailable_error`
 - log แค่ `label` (เส้นทางแบบ template ที่ไม่มีรหัสนักศึกษา) สถานะ และเวลา
   **ไม่ log token, params หรือข้อมูลที่ได้กลับมา**
 """
@@ -13,7 +14,13 @@ from typing import Any
 
 import httpx
 
-from .errors import TokenExpired, UpstreamRejected, UpstreamSchemaError, UpstreamUnavailable
+from .errors import (
+    TokenExpired,
+    UpstreamNotFound,
+    UpstreamRejected,
+    UpstreamSchemaError,
+    UpstreamUnavailable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +70,8 @@ class JsonApi:
                     return self._json_of(response, label)
                 if response.status_code == 401:
                     raise TokenExpired(f"{label}: HTTP 401")
+                if response.status_code == 404:
+                    raise UpstreamNotFound(f"{label}: HTTP 404")
                 if response.status_code < 500:
                     raise UpstreamRejected(f"{label}: HTTP {response.status_code}")
                 reason = f"HTTP {response.status_code}"

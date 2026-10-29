@@ -38,6 +38,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     client = build_act_client(settings)  # รวม PassportClient ด้วยถ้า IDENTITY_MODE=passport
     set_act_client(client)
     logger.info("aura-agent starting model=%s", settings.llm_model)
+    if settings.dev_admins:
+        logger.warning(
+            "DEV_ADMIN_USERNAMES ตั้งไว้ %d บัญชี ได้สิทธิ์ผู้ดูแลระบบ (ดูนักศึกษาทุกรหัส) — ใช้บนเครื่องผู้พัฒนาเท่านั้น",
+            len(settings.dev_admins),
+        )
 
     try:
         async with sqlite_checkpointer(settings.sqlite_path) as checkpointer:

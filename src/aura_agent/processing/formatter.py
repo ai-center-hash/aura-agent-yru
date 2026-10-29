@@ -234,10 +234,17 @@ def format_advisees(advisees: list[Advisee], *, only_incomplete: bool = False) -
     return "\n".join(lines)
 
 
-def format_advisee_progress(advisee: Advisee, report: ProgressReport) -> str:
-    """ความคืบหน้าเต็มของนักศึกษา 1 คนในที่ปรึกษา"""
-    header = f"[ความคืบหน้าของนักศึกษาในที่ปรึกษา] {advisee.username} {advisee.display_name}"
+def format_advisee_progress(
+    advisee: Advisee, report: ProgressReport, *, as_admin: bool = False
+) -> str:
+    """ความคืบหน้าเต็มของนักศึกษา 1 คนในที่ปรึกษา (หรือนักศึกษาใดก็ได้เมื่อดูด้วยสิทธิ์ผู้ดูแลระบบ)"""
+    title = ADMIN_VIEW_TITLE if as_admin else ADVISEE_VIEW_TITLE
+    header = f"[{title}] {advisee.username} {advisee.display_name}"
     return f"{header}\n{format_progress(report)}"
+
+
+ADVISEE_VIEW_TITLE = "ความคืบหน้าของนักศึกษาในที่ปรึกษา"
+ADMIN_VIEW_TITLE = "ความคืบหน้าของนักศึกษา (ดูด้วยสิทธิ์ผู้ดูแลระบบ)"
 
 
 def _advisee_status(item: Advisee) -> str:

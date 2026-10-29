@@ -26,9 +26,14 @@ class PassportUser(ActModel):
         return str(value) if isinstance(value, int) else value
 
     @property
+    def login(self) -> str | None:
+        """ชื่อบัญชี: รหัสนักศึกษา 9 หลัก หรือของบุคลากรเป็นแบบ `ชื่อ.อักษร`"""
+        return self.username or self.preferred_username
+
+    @property
     def student_code(self) -> str | None:
         """รหัสนักศึกษา 9 หลัก — ใช้เป็นตัวตนกับ Activity API"""
-        return self.username or self.preferred_username
+        return self.login
 
     @property
     def display(self) -> str:
@@ -37,3 +42,10 @@ class PassportUser(ActModel):
     @property
     def is_student(self) -> bool:
         return self.user_type == "student"
+
+    @property
+    def is_staff(self) -> bool:
+        """บุคลากร (อาจารย์ เจ้าหน้าที่) · `user_type` อื่นที่ไม่รู้จักไม่ใช่ทั้งนักศึกษาและบุคลากร
+        จึงไม่ได้สิทธิ์ดูข้อมูลของใคร (ปิดไว้ก่อน ไม่ถือว่า "ไม่ใช่นักศึกษา = บุคลากร")
+        """
+        return self.user_type == "staff"

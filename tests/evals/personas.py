@@ -10,7 +10,13 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-from aura_agent.data import NoActivityFrame, NotAStudent, NotYourAdvisee
+from aura_agent.data import (
+    NoActivityFrame,
+    NotAnAdmin,
+    NotAStudent,
+    NotYourAdvisee,
+    UpstreamNotFound,
+)
 from aura_agent.data.schemas import (
     Advisee,
     PassportUser,
@@ -39,6 +45,9 @@ class Persona:
     # อาจารย์ที่ปรึกษา: แถวจาก /v1/auth/users และ summary ของแต่ละคน (คนที่ไม่มีไฟล์ = ยังไม่มีกรอบ)
     advisees: list[Advisee] = field(default_factory=list)
     advisee_summaries: dict[str, StudentSummary] = field(default_factory=dict)
+    # ผู้ดูแลระบบ (role admin ในระบบกิจกรรม): ดูได้ทุกรหัสที่มีไฟล์ใน student_summaries/
+    is_admin: bool = False
+    student_summaries: dict[str, StudentSummary] = field(default_factory=dict)
 
     @property
     def is_student(self) -> bool:
@@ -82,6 +91,10 @@ def load_persona(name: str, directory: Path | None = None) -> Persona:
             path.stem: StudentSummary.model_validate(_read(path)["data"])
             for path in sorted((base / "advisee_summaries").glob("*.json"))
         }
+        student_summaries = {
+            path.stem: StudentSummary.model_validate(_read(path)["data"])
+            for path in sorted((base / "student_summaries").glob("*.json"))
+        }
         return Persona(
             name=name,
             summary=None,
@@ -90,6 +103,8 @@ def load_persona(name: str, directory: Path | None = None) -> Persona:
             identity=identity,
             advisees=advisees,
             advisee_summaries=summaries,
+            is_admin=(base / "admin.json").exists(),
+            student_summaries=student_summaries,
         )
 
     summary = StudentSummary.model_validate(_read(base / "summary_me.json")["data"])
@@ -179,6 +194,25 @@ class PersonaClient:
         if summary is None:
             raise NoActivityFrame("ไม่พบกรอบกิจกรรมที่ตรงกับกลุ่มของผู้ใช้")
         return advisee, summary
+
+    async def is_admin(self, jwt: str) -> bool:
+        self.calls.append(("is_admin", {}))
+        return self.persona.is_admin
+
+    async def get_student_summary_as_admin(self, jwt: str, student_code: str):
+        """เหมือน ActClient: ตรวจสิทธิ์ผู้ดูแลระบบก่อนเสมอ · รหัสที่ไม่มีไฟล์ = ไม่พบในระบบ (404)"""
+        code = student_code.strip()
+        self.calls.append(("get_student_summary_as_admin", {"code": code}))
+        if not self.persona.is_admin:
+            raise NotAnAdmin("persona")
+        summary = self.persona.student_summaries.get(code)
+        if summary is None:
+            raise UpstreamNotFound("persona: HTTP 404")
+        user = summary.user
+        student = Advisee(
+            username=code, name=user.name, program=user.major, student_status=user.student_status
+        )
+        return student, summary
 
     async def ping(self) -> bool:
         return True
