@@ -122,6 +122,8 @@ async def test_chat_streams_tokens_and_done(api, api_headers):
     assert done["thread_id"] == "t1"
     assert done["tools_used"] == []
     assert done["latency_ms"] >= 0
+    assert done["prompt_tokens"] >= 0
+    assert done["completion_tokens"] >= 0
 
 
 async def test_chat_sends_status_before_tokens(api, api_headers):

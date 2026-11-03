@@ -41,13 +41,15 @@ def test_event_shapes():
 
 
 def test_done_event_fields():
-    event = done_event("t1", ["get_my_progress"], 4120)
+    event = done_event("t1", ["get_my_progress"], 4120, prompt_tokens=1500, completion_tokens=80)
 
     assert event["event"] == "done"
     assert data_of(event) == {
         "thread_id": "t1",
         "tools_used": ["get_my_progress"],
         "latency_ms": 4120,
+        "prompt_tokens": 1500,
+        "completion_tokens": 80,
     }
 
 
@@ -127,6 +129,42 @@ def test_translator_skips_other_nodes():
     events = list(translator.handle("messages", (AIMessageChunk(content="[ข้อมูลดิบ]"), TOOLS_META)))
 
     assert events == []
+
+
+def test_translator_sums_usage_across_llm_rounds():
+    """เรียก tool = เรียก LLM 2 รอบ แต่ละรอบมี usage แค่ใน chunk สุดท้าย (ข้อความว่าง)"""
+    translator = StreamTranslator()
+
+    def usage(input_tokens: int, output_tokens: int) -> AIMessageChunk:
+        return AIMessageChunk(
+            content="",
+            usage_metadata={
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": input_tokens + output_tokens,
+            },
+        )
+
+    for chunk, meta in [
+        (AIMessageChunk(content="รอสักครู่"), AGENT_META),
+        (usage(1200, 30), AGENT_META),
+        (AIMessageChunk(content="[ผลของ tool]"), TOOLS_META),
+        (AIMessageChunk(content="คุณยังขาด 2 หมวด"), AGENT_META),
+        (usage(1500, 45), AGENT_META),
+    ]:
+        list(translator.handle("messages", (chunk, meta)))
+
+    assert translator.prompt_tokens == 2700
+    assert translator.completion_tokens == 75
+
+
+def test_translator_usage_is_zero_without_metadata():
+    translator = StreamTranslator()
+
+    list(translator.handle("messages", (AIMessageChunk(content="สวัสดีครับ"), AGENT_META)))
+
+    assert translator.prompt_tokens == 0
+    assert translator.completion_tokens == 0
 
 
 def test_translator_announces_tool_from_chunk():

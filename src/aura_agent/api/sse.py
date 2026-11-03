@@ -50,10 +50,23 @@ def token_event(text: str) -> dict[str, str]:
     return sse_event("token", {"text": text})
 
 
-def done_event(thread_id: str, tools_used: list[str], latency_ms: int) -> dict[str, str]:
+def done_event(
+    thread_id: str,
+    tools_used: list[str],
+    latency_ms: int,
+    *,
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+) -> dict[str, str]:
     return sse_event(
         "done",
-        {"thread_id": thread_id, "tools_used": list(tools_used), "latency_ms": latency_ms},
+        {
+            "thread_id": thread_id,
+            "tools_used": list(tools_used),
+            "latency_ms": latency_ms,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+        },
     )
 
 
@@ -133,6 +146,9 @@ class StreamTranslator:
 
     def __init__(self) -> None:
         self.tools_used: list[str] = []
+        # ยอดรวม token ทุกรอบที่เรียก LLM (คำถามที่เรียก tool จะเรียก LLM มากกว่า 1 รอบ)
+        self.prompt_tokens = 0
+        self.completion_tokens = 0
         self._announced: set[str] = set()
         self._think = ThinkFilter()
         self._cleaner = AnswerCleaner()
@@ -159,6 +175,11 @@ class StreamTranslator:
         chunk, metadata = payload
         if (metadata or {}).get("langgraph_node") != AGENT_NODE:
             return
+
+        # Ollama ใส่ usage_metadata ไว้ใน chunk สุดท้ายของแต่ละรอบ (chunk นั้นมักไม่มีข้อความ)
+        usage = getattr(chunk, "usage_metadata", None) or {}
+        self.prompt_tokens += usage.get("input_tokens") or 0
+        self.completion_tokens += usage.get("output_tokens") or 0
 
         yield from self._emit(self._cleaner.feed(self._think.feed(message_text(chunk))))
 
@@ -239,8 +260,20 @@ async def chat_events(
             yield event
 
         latency_ms = _elapsed_ms(started)
-        logger.info("chat done tools=%s ms=%d", ",".join(translator.tools_used) or "-", latency_ms)
-        yield done_event(thread_id, translator.tools_used, latency_ms)
+        logger.info(
+            "chat done tools=%s ms=%d prompt_tokens=%d completion_tokens=%d",
+            ",".join(translator.tools_used) or "-",
+            latency_ms,
+            translator.prompt_tokens,
+            translator.completion_tokens,
+        )
+        yield done_event(
+            thread_id,
+            translator.tools_used,
+            latency_ms,
+            prompt_tokens=translator.prompt_tokens,
+            completion_tokens=translator.completion_tokens,
+        )
 
     except (ActApiError, AgentError) as error:
         logger.warning("chat failed code=%s ms=%d", error.code, _elapsed_ms(started))

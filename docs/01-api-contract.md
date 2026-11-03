@@ -31,7 +31,7 @@
 |---|---|---|
 | `status` | `{"text": "กำลังค้นหากิจกรรม..."}` | ตอนเริ่มเรียก tool (เอาไว้แสดงสถานะ) |
 | `token` | `{"text": "คุณยังขาด"}` | ข้อความคำตอบทีละชิ้น ให้ต่อกันตามลำดับ |
-| `done` | `{"thread_id": "...", "tools_used": ["get_my_progress"], "latency_ms": 4120}` | จบคำตอบ |
+| `done` | `{"thread_id": "...", "tools_used": ["get_my_progress"], "latency_ms": 4120, "prompt_tokens": 2700, "completion_tokens": 75}` | จบคำตอบ · `prompt_tokens`/`completion_tokens` = ยอดรวม input/output token ทุกรอบที่เรียก LLM ในคำถามนี้ (ไม่มีข้อมูล = 0) |
 | `error` | `{"code": "TOKEN_EXPIRED", "text": "กรุณาเข้าสู่ระบบใหม่"}` | มีปัญหา (ส่งแทน `done`) |
 
 **ตัวอย่าง stream**
@@ -43,7 +43,7 @@ event: token
 data: {"text": "คุณยังขาดอีก 2 หมวด"}
 
 event: done
-data: {"thread_id": "c1f0a7e2-...", "tools_used": ["get_my_progress"], "latency_ms": 4120}
+data: {"thread_id": "c1f0a7e2-...", "tools_used": ["get_my_progress"], "latency_ms": 4120, "prompt_tokens": 2700, "completion_tokens": 75}
 ```
 
 ## Error codes
