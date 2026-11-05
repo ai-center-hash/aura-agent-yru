@@ -5,10 +5,9 @@
 
 ## ข้อแตกต่างจากตัวจริง
 
-- **push ถูกปิด** (`git remote set-url --push origin DISABLED-...`) เพราะเครื่องจริง deploy จาก `main` บน GitHub
-  ถ้าผลทดสอบดีและอยากนำไปใช้ ให้นำการแก้ไปทำใน AURA-AGENT แล้วรัน eval ที่นั่น
-- ทำงานบน branch `model-test`
-- **ห้ามรัน `deploy/install.sh` จากโฟลเดอร์นี้** และห้ามคัดลอก `.env` นี้ไปเครื่องจริง (มี `DEV_ADMIN_USERNAMES`)
+- ทำงานบน branch `model-test` · **push ได้เฉพาะ `model-test`** (`git push` เฉยๆ ส่งแค่ branch นี้ และ hook `pre-push` ปฏิเสธ `main`)
+  เพราะเครื่องจริง deploy จาก `main` บน GitHub · ถ้าผลทดสอบดีและอยากนำไปใช้ ให้นำการแก้ไปทำใน AURA-AGENT แล้วรัน eval ที่นั่น
+- **ห้ามรัน `deploy/install.sh` จากโฟลเดอร์นี้** (ตัวทดสอบใช้ `deploy/install-test.sh`) และห้ามคัดลอก `.env` นี้ไปเครื่องจริง (มี `DEV_ADMIN_USERNAMES`)
 - `.env` คัดลอกมาจากตัวจริง ส่วนท้ายไฟล์มีตัวอย่างการตั้งค่าเซิร์ฟเวอร์ใหม่
 - ฐานข้อมูลแชท `./data/aura.sqlite` แยกจากตัวจริง (path เป็นแบบ relative)
 - `scripts/dev_chat.py` ใช้ port 80 เหมือนตัวจริง จึงเปิดพร้อมกันทั้ง 2 โฟลเดอร์ไม่ได้
@@ -29,3 +28,18 @@ python -m uv run python scripts/dev_chat.py                          # ลอง
   system prompt + tool ของ AURA ราว 3–4 พัน token → ข้อเดียวหลายนาที (eval 2 ข้อไม่เสร็จใน 10 นาที) · ตัวจริงบน yru-ai TTFT 3.2 วิ
 - **port 11434 เปิดสู่อินเทอร์เน็ตโดยไม่มีการยืนยันตัวตน** ต้องปิดด้วย firewall ของ Google Cloud แล้วใช้ SSH tunnel แบบ yru-ai
 - `.env` ของโฟลเดอร์นี้ชี้ไปที่เครื่องนี้แล้ว (`OLLAMA_BASE_URL`, `LLM_MODEL=qwen2.5:14b`)
+
+## ตัวทดสอบบน yru-ai · `http://10.20.41.54:8101`
+
+แยกจากตัวจริง (`:8100`) ทั้งหมด: `/opt/aura-agent-test` · service `aura-agent-test` · ฐานข้อมูลแชทของตัวเอง ·
+ลบแชทเก่าด้วย `aura-prune-test.timer` (03:30) · ใช้ user `aura` และ deploy key เดียวกับตัวจริง ·
+API และ `SERVICE_KEY` เหมือนตัวจริง backend เปลี่ยนแค่ URL ([docs/01-api-contract.md](docs/01-api-contract.md))
+
+ครั้งแรก (บน yru-ai · ดึงสคริปต์จาก branch นี้ผ่าน repo ของตัวจริง ไม่แตะไฟล์ของตัวจริง):
+
+```bash
+sudo -u aura env GIT_SSH_COMMAND="ssh -i /etc/aura-agent/deploy_key -o IdentitiesOnly=yes -o UserKnownHostsFile=/etc/aura-agent/known_hosts" git -C /opt/aura-agent fetch -q origin model-test && sudo -u aura git -C /opt/aura-agent show FETCH_HEAD:deploy/install-test.sh > /tmp/install-test.sh && sudo bash /tmp/install-test.sh
+```
+
+ครั้งต่อไป: `sudo bash /opt/aura-agent-test/deploy/install-test.sh` · เปลี่ยนโมเดล: แก้ `LLM_MODEL` ใน `/opt/aura-agent-test/.env`
+แล้ว `sudo systemctl restart aura-agent-test` · log: `journalctl -u aura-agent-test -n 50`

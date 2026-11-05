@@ -1,6 +1,6 @@
 # CLAUDE.md · AURA-AGENT
 
-> **โฟลเดอร์นี้คือ AURA-AGENT-TEST** สำเนาสำหรับทดสอบโมเดล/เซิร์ฟเวอร์ใหม่ อ่าน [TEST-COPY.md](TEST-COPY.md) ก่อน · ห้าม push และห้าม deploy จากที่นี่
+> **โฟลเดอร์นี้คือ AURA-AGENT-TEST** สำเนาสำหรับทดสอบโมเดล/เซิร์ฟเวอร์ใหม่ อ่าน [TEST-COPY.md](TEST-COPY.md) ก่อน · push ได้เฉพาะ branch `model-test` (ห้าม `main`) · deploy ด้วย `deploy/install-test.sh` เท่านั้น (port 8101)
 
 แชทบอทกิจกรรมนักศึกษา มรย. (LangGraph + FastAPI + Ollama) อ่าน [README.md](README.md) เพื่อดูภาพรวม
 
