@@ -1,5 +1,7 @@
 # CLAUDE.md · AURA-AGENT
 
+> **โฟลเดอร์นี้คือ AURA-AGENT-TEST** สำเนาสำหรับทดสอบโมเดล/เซิร์ฟเวอร์ใหม่ อ่าน [TEST-COPY.md](TEST-COPY.md) ก่อน · ห้าม push และห้าม deploy จากที่นี่
+
 แชทบอทกิจกรรมนักศึกษา มรย. (LangGraph + FastAPI + Ollama) อ่าน [README.md](README.md) เพื่อดูภาพรวม
 
 ## ก่อนเริ่มงานทุกครั้ง
