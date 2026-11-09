@@ -10,7 +10,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from aura_agent.agent import build_graph, run_config, state_serializer
 from aura_agent.agent.prompts import ANONYMOUS_TYPE
 from aura_agent.processing import StudentProfile
-from aura_agent.processing.formatter import OPEN_SCHEDULES_TITLE
+from aura_agent.processing.formatter import OPEN_SCHEDULES_TITLE, format_anonymous
 from aura_agent.tools import (
     get_advisee_progress,
     get_my_progress,
@@ -63,3 +63,11 @@ async def test_graph_builds_anonymous_profile_without_calling_apis(act_client, f
     assert state["progress_text"].startswith("[ความคืบหน้า] ผู้ใช้ยังไม่ได้เข้าสู่ระบบ")
     assert act_client.names() == []
     assert ANONYMOUS_TYPE in fake.calls[0]["messages"][0].content
+
+
+def test_anonymous_progress_text_requires_search_tool():
+    """ผู้ใช้ไม่ login ถาม "เดือนนี้มีกิจกรรมอะไรบ้าง" แล้วโมเดลกุรายชื่อกิจกรรม (ทดสอบโหลด 2026-11-09)"""
+    text = format_anonymous()
+
+    assert "ต้องเรียก search_activities ก่อนตอบทุกครั้ง" in text
+    assert "เดือนนี้" in text

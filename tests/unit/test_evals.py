@@ -49,8 +49,8 @@ def make_result(case: EvalCase, **overrides) -> CaseResult:
 def test_dataset_loads_with_expected_shape():
     cases = load_dataset()
 
-    assert len(cases) == 69
-    assert len({case.id for case in cases}) == 69  # id ต้องไม่ซ้ำ
+    assert len(cases) == 72
+    assert len({case.id for case in cases}) == 72  # id ต้องไม่ซ้ำ
 
 
 def test_dataset_history_is_loaded_as_turns():
@@ -69,7 +69,7 @@ def test_dataset_category_counts_match_the_plan():
 
     assert counts == {
         "progress": 16,
-        "search": 13,
+        "search": 16,
         "recommend": 10,
         "history": 8,
         "safety": 12,
