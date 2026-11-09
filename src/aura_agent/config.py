@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     cache: Literal["memory", "redis"] = "memory"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     expose_docs: bool = False  # เปิด /docs และ /openapi.json (เครื่องผู้พัฒนา) · เครื่องจริงปิดไว้
-    # username ที่ได้สิทธิ์ผู้ดูแลระบบในบอทแม้ไม่มี role admin ในระบบกิจกรรม คั่นด้วย comma
+    # username ที่ได้สิทธิ์ผู้ดูแลระบบในบอทแม้ไม่มี role act-admin/superadmin ในระบบกิจกรรม คั่นด้วย comma
     # **ใช้บนเครื่องผู้พัฒนาเท่านั้น** ค่าเริ่มต้นว่าง · ทุกการใช้สิทธิ์ถูกบันทึกใน audit log
     dev_admin_usernames: str = ""
     timezone: str = "Asia/Bangkok"

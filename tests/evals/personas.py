@@ -45,7 +45,7 @@ class Persona:
     # อาจารย์ที่ปรึกษา: แถวจาก /v1/auth/users และ summary ของแต่ละคน (คนที่ไม่มีไฟล์ = ยังไม่มีกรอบ)
     advisees: list[Advisee] = field(default_factory=list)
     advisee_summaries: dict[str, StudentSummary] = field(default_factory=dict)
-    # ผู้ดูแลระบบ (role admin ในระบบกิจกรรม): ดูได้ทุกรหัสที่มีไฟล์ใน student_summaries/
+    # ผู้ดูแลระบบ (role act-admin/superadmin ในระบบกิจกรรม): ดูได้ทุกรหัสที่มีไฟล์ใน student_summaries/
     is_admin: bool = False
     student_summaries: dict[str, StudentSummary] = field(default_factory=dict)
 
