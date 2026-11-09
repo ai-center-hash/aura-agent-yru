@@ -10,7 +10,7 @@
 
 สิทธิ์ดูข้อมูลนักศึกษาคนอื่น (โหมด passport เท่านั้น · บุคลากรต้องมี Passport `user_type="staff"`)
 - อาจารย์ที่ปรึกษา: เฉพาะนักศึกษาที่ `advisor_type_ref_id` = `user_type_id` ของตัวเอง
-- ผู้ดูแลระบบ: role `admin` ในระบบกิจกรรม (ตรงกับ `local-role:admin` ของเว็บ act.yru.ac.th) ดูได้ทุกรหัส
+- ผู้ดูแลระบบ: role `act-admin` หรือ `superadmin` ในระบบกิจกรรม ดูได้ทุกรหัส
   หรือ username ที่อยู่ใน `DEV_ADMIN_USERNAMES` (ใช้ตอนพัฒนาเท่านั้น) · ทุกครั้งบันทึก audit log
 
 หลักการอื่น
@@ -57,13 +57,15 @@ ADVISEES_LABEL = "/v1/auth/users?advisor={advisor}"  # ใช้ใน log/error
 STAFF_LABEL = "/v1/auth/users?type_in=staff"
 # type ของบุคลากรในระบบกิจกรรม (คนละชุดกับ user_type ของ Passport)
 STAFF_TYPES = ("teacher", "staff", "personnel")
-ADMIN_ROLE = "admin"
+# role ในระบบกิจกรรมที่ถือเป็นผู้ดูแลระบบ (ตัดสิน 2026-11-09 · เดิมชื่อ `admin` ระบบกิจกรรมเปลี่ยนชื่อแล้ว)
+# ไม่รวม `clubs-admin` (ดูแลชมรม) `advisor` และ `act-scanner`
+ADMIN_ROLES = frozenset({"act-admin", "superadmin"})
 
 SUMMARY_TTL_S = 120.0
 SCHEDULES_TTL_S = 120.0
 REGISTRATIONS_TTL_S = 60.0
 ADVISEES_TTL_S = 300.0
-STAFF_TTL_S = 300.0  # เพิ่ม/ถอด role admin ในระบบกิจกรรมแล้วมีผลกับบอทภายใน 5 นาที
+STAFF_TTL_S = 300.0  # เพิ่ม/ถอด role ผู้ดูแลระบบในระบบกิจกรรมแล้วมีผลกับบอทภายใน 5 นาที
 AUDIT_ID_LEN = 12
 
 PUBLIC_SCOPE = "public"  # ข้อมูลที่เหมือนกันทุกคน จึงใช้ cache ร่วมกันได้
@@ -288,7 +290,7 @@ class ActClient(JsonApi):
         """เจ้าของ token เป็นผู้ดูแลระบบกิจกรรมไหม (ไม่แน่ใจ = ไม่ใช่)
 
         ต้องเป็นบุคลากรใน Passport และมีบัญชีในระบบกิจกรรมที่ตรงทั้ง username และ
-        `type_ref_id` = `user_type_id` พร้อม role `admin` · หรืออยู่ใน `DEV_ADMIN_USERNAMES`
+        `type_ref_id` = `user_type_id` พร้อม role ใน `ADMIN_ROLES` · หรืออยู่ใน `DEV_ADMIN_USERNAMES`
         """
         identity = await self.get_identity(jwt)
         if identity is None or identity.is_student or not identity.login:
@@ -305,7 +307,7 @@ class ActClient(JsonApi):
             account is not None
             and account.type in STAFF_TYPES
             and account.type_ref_id == identity.user_type_id
-            and ADMIN_ROLE in account.roles
+            and not ADMIN_ROLES.isdisjoint(account.roles)
         )
 
     async def get_student_summary_as_admin(
@@ -317,7 +319,7 @@ class ActClient(JsonApi):
         บันทึก audit log ว่าใครดูใคร ด้วย id ที่ hash ด้วย key ลับ (ไม่ log รหัสนักศึกษาตรงๆ)
         """
         if not await self.is_admin(jwt):
-            raise NotAnAdmin("ไม่มี role admin ในระบบกิจกรรม")
+            raise NotAnAdmin("ไม่มี role ผู้ดูแลระบบในระบบกิจกรรม")
 
         code = student_code.strip()
         identity = await self.get_identity(jwt)

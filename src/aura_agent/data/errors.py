@@ -84,7 +84,8 @@ class NotYourAdvisee(ActApiError):
 
 
 class NotAnAdmin(ActApiError):
-    """ขอดูนักศึกษานอกที่ปรึกษาด้วยสิทธิ์ผู้ดูแลระบบ แต่เจ้าของ token ไม่มี role `admin` ในระบบกิจกรรม"""
+    """ขอดูนักศึกษานอกที่ปรึกษาด้วยสิทธิ์ผู้ดูแลระบบ แต่เจ้าของ token ไม่มี role ผู้ดูแลระบบ
+    (`act-admin`/`superadmin`) ในระบบกิจกรรม"""
 
     code = "NOT_ADMIN"
     message_th = "ส่วนนี้ใช้ได้เฉพาะผู้ดูแลระบบกิจกรรมครับ"

@@ -1,7 +1,8 @@
 """ผู้ดูแลระบบกิจกรรมดูนักศึกษาได้ทุกรหัส (ตัดสิน 2026-10-29)
 
 ผู้ดูแลระบบ = บุคลากรใน Passport (`user_type="staff"`) ที่มีบัญชีในระบบกิจกรรมตรงทั้ง username และ
-`type_ref_id` = `user_type_id` พร้อม role `admin` (เว็บ act.yru.ac.th ใช้ `local-role:admin` แบบเดียวกัน)
+`type_ref_id` = `user_type_id` พร้อม role `act-admin` หรือ `superadmin`
+(ระบบกิจกรรมเปลี่ยนชื่อจาก `admin` · 2026-11-09)
 หรือ username ที่อยู่ใน `DEV_ADMIN_USERNAMES` · ข้อมูลทั้งหมดเป็นค่าสมมติ mock HTTP ด้วย respx
 """
 
@@ -54,12 +55,12 @@ def staff_row(username: str, ref: str, roles: list[str], type_: str = "personnel
         "telephone": "0800000000",
         "address": "บ้านเลขที่สมมติ",
         "roles": [{"name": role, "display_name": role.title()} for role in roles],
-        "permissions": [{"name": "manage-users"}] if "admin" in roles else [],
+        "permissions": [{"name": "manage-users"}] if "act-admin" in roles else [],
     }
 
 
 STAFF_ROWS = [
-    staff_row("admin.a", ADMIN_REF, ["admin"]),
+    staff_row("admin.a", ADMIN_REF, ["act-admin"]),
     staff_row("plain.p", "2002", []),
     staff_row("advisor.t", "1577", ["advisor"], type_="teacher"),
 ]
@@ -107,7 +108,7 @@ async def test_activity_admin_is_admin(make_client, respx_mock):
 @pytest.mark.parametrize(
     ("override", "reason"),
     [
-        ({"username": "plain.p", "user_type_id": "2002"}, "บุคลากรที่ไม่มี role admin"),
+        ({"username": "plain.p", "user_type_id": "2002"}, "บุคลากรที่ไม่มี role ผู้ดูแลระบบ"),
         ({"user_type_id": "9999"}, "username ตรงแต่ type_ref_id ไม่ตรง"),
         ({"username": "someone.else"}, "type_ref_id ตรงแต่ username ไม่ตรง"),
         ({"user_type": "student_assistant"}, "user_type ที่ไม่รู้จัก ไม่ถือว่าเป็นบุคลากร"),
@@ -121,6 +122,23 @@ async def test_not_admin(make_client, respx_mock, override, reason):
     assert await make_client().is_admin(JWT) is False, reason
 
 
+@pytest.mark.parametrize(
+    ("roles", "expected"),
+    [
+        (["superadmin"], True),
+        (["advisor", "act-admin"], True),
+        (["admin"], False),  # ชื่อเดิมก่อน 2026-11-09 ไม่มีในระบบแล้ว ไม่นับ
+        (["clubs-admin"], False),
+        (["advisor", "act-scanner"], False),
+    ],
+)
+async def test_admin_roles(make_client, respx_mock, roles, expected):
+    mock_userinfo(respx_mock)
+    mock_staff(respx_mock, rows=[staff_row("admin.a", ADMIN_REF, roles)])
+
+    assert await make_client().is_admin(JWT) is expected
+
+
 async def test_student_is_never_admin_and_staff_list_is_not_fetched(make_client, respx_mock):
     mock_userinfo(respx_mock, user_type="student", username="406600101")
     route = mock_staff(respx_mock)
@@ -131,7 +149,7 @@ async def test_student_is_never_admin_and_staff_list_is_not_fetched(make_client,
 
 async def test_admin_role_on_a_student_account_does_not_count(make_client, respx_mock):
     mock_userinfo(respx_mock)
-    mock_staff(respx_mock, rows=[staff_row("admin.a", ADMIN_REF, ["admin"], type_="student")])
+    mock_staff(respx_mock, rows=[staff_row("admin.a", ADMIN_REF, ["act-admin"], type_="student")])
 
     assert await make_client().is_admin(JWT) is False
 

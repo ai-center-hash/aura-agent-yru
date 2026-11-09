@@ -1,6 +1,6 @@
 """Activity API · `GET /v1/auth/users?type_in=teacher,staff,personnel` — บัญชีบุคลากรในระบบกิจกรรม
 
-ใช้ตรวจ role `admin` ของระบบกิจกรรม (เว็บ act.yru.ac.th ใช้ `local-role:admin` ตัดสินสิทธิ์จัดการแบบเดียวกัน)
+ใช้ตรวจ role ผู้ดูแลระบบ (`act-admin`/`superadmin`) ของระบบกิจกรรม
 response จริงมีที่อยู่ เบอร์โทร อีเมล ฯลฯ — schema นี้ประกาศเฉพาะที่ใช้จับคู่และตรวจ role
 """
 
@@ -25,7 +25,7 @@ class StaffAccount(ActModel):
     @field_validator("roles", mode="before")
     @classmethod
     def _role_names(cls, value: object) -> object:
-        """ของจริงเป็น `[{"name": "admin", "display_name": ...}]` เก็บแค่ชื่อ"""
+        """ของจริงเป็น `[{"name": "act-admin", "display_name": ...}]` เก็บแค่ชื่อ"""
         if value is None:
             return []
         if isinstance(value, list):
