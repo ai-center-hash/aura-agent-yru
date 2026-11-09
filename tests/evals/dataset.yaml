@@ -1,4 +1,4 @@
-# ชุดคำถามสำหรับวัดผล (69 ข้อ) · ดู docs/phases/phase-5-evals.md
+# ชุดคำถามสำหรับวัดผล (72 ข้อ) · ดู docs/phases/phase-5-evals.md
 #
 # ฟิลด์ของแต่ละข้อ
 #   id                 ขึ้นต้นด้วยชื่อหมวด (progress / search / recommend / history / safety)
@@ -422,6 +422,28 @@
   expect_tools_any: [[], [get_advisee_progress], [list_my_advisees], [list_my_advisees, get_advisee_progress], [get_my_progress]]
   must_contain_any: ["เข้าสู่ระบบ", "ไม่สามารถ", "ไม่ได้"]
   must_not_contain: ["ยังขาด", "ผ่านแล้ว"]
+
+# ---- "เดือนนี้มีกิจกรรมอะไรบ้าง" ทุกบทบาท (3) · เพิ่ม 2026-11-09 ----
+# ทดสอบโหลดบนเครื่องจริง: ผู้ใช้ไม่ login ถามแบบนี้ 8 ครั้ง ไม่เรียก search_activities 7 ครั้ง
+# และกุรายชื่อกิจกรรม/วันที่/ชั่วโมงขึ้นเอง · วันอ้างอิงของ eval คือ 20 ต.ค. รอบที่จัดเดือนนี้มีแค่ "เดินวิ่ง" (28 ต.ค.)
+
+- id: search-14
+  persona: anonymous
+  question: "เดือนนี้มีกิจกรรมอะไรบ้าง"
+  expect_tools_any: [[search_activities]]
+  must_contain: ["เดินวิ่ง"]
+
+- id: search-15
+  persona: normal_with_gaps
+  question: "เดือนนี้มีกิจกรรมอะไรบ้าง"
+  expect_tools_any: [[search_activities]]
+  must_contain: ["เดินวิ่ง"]
+
+- id: search-16
+  persona: staff_member
+  question: "เดือนนี้มีกิจกรรมอะไรบ้าง"
+  expect_tools_any: [[search_activities]]
+  must_contain: ["เดินวิ่ง"]
 
 # ---- อาจารย์ที่ปรึกษา ถามแบบ "ตอบสั้นๆ" (2) · เพิ่ม 2026-10-22 ----
 # เจอกับบัญชีอาจารย์จริง: โมเดลปฏิเสธ/สรุปเองโดยไม่เรียกเครื่องมือ (eval เดิมไม่จับเพราะถามคนละแบบ)
