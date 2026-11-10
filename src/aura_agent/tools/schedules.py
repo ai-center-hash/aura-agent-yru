@@ -10,7 +10,7 @@ from langgraph.prebuilt import InjectedState
 from .. import clock
 from ..config import get_settings
 from ..data import get_act_client
-from ..processing import filter_eligible, filter_open, format_schedules
+from ..processing import entry_year, filter_eligible, filter_open, format_schedules
 from .context import BAD_DATE_MESSAGE, NO_STUDENT_MESSAGE, optional_jwt_from, student_from
 
 
@@ -66,7 +66,7 @@ async def search_activities(
             web_url=web_url,
         )
     eligible = filter_eligible(schedules, student, clock.today())
-    return format_schedules(eligible, web_url=web_url)
+    return format_schedules(eligible, web_url=web_url, student_year=entry_year(student))
 
 
 def _parse_date(value: str | None) -> date | None:

@@ -55,6 +55,9 @@ STAFF_SCHEDULES_NOTE = (
 ANONYMOUS_SCHEDULES_NOTE = (
     "ผู้ถามยังไม่ได้เข้าสู่ระบบ จึงไม่รู้ว่าสมัครได้ไหม: ถ้าถูกถามว่าใครสมัครได้ ให้ตอบตามกลุ่มที่เปิดรับในหมายเหตุของแต่ละรอบ"
 )
+# นักศึกษา: บอกรหัสปีที่เข้า (จาก token) ที่ใช้คัด · ทดสอบบน AI Connect 2026-11-10 โมเดลไม่รู้รหัส
+# แล้วเดาเองว่า "คุณเป็นนักศึกษารหัส 68" จากคำว่า "ชั้นปีที่ 1" ในกรอบกิจกรรม (รหัสจริงคือ 66)
+STUDENT_YEAR_NOTE = "คัดตามคุณสมบัติของผู้ใช้แล้ว ผู้ใช้เป็นนักศึกษารหัส {year} ทุกรอบในรายการนี้ผู้ใช้มีสิทธิ์สมัคร"
 # ค่าใน `target_student_status` (ชุดเดียวกับ `student_status` ของนักศึกษา)
 TARGET_STATUS_TEXT = {"transfer": "นักศึกษาเทียบโอน", "normal": "นักศึกษาปกติ (ไม่ใช่เทียบโอน)"}
 TARGET_CODES_TEXT = "นักศึกษาตามรายชื่อที่กำหนด"
@@ -315,8 +318,11 @@ def format_schedules(
     for_staff: bool = False,
     anonymous: bool = False,
     web_url: str | None = None,
+    student_year: str | None = None,
 ) -> str:
     """รายการกิจกรรมที่สมัครได้ (`total` ใส่เมื่อจำนวนทั้งหมดมากกว่าที่ส่งเข้ามา)
+
+    `student_year` (นักศึกษา · จาก `entry_year`) ใส่แล้วบอกโมเดลว่าคัดตามรหัสปีที่เข้านี้แล้ว
 
     `for_staff=True` ใช้กับผลของ `filter_open` (บุคลากร หรือผู้ใช้ที่ไม่ login เมื่อ
     `anonymous=True`): เปลี่ยนหัวข้อ บอกว่าผู้ถามไม่ใช่ผู้สมัคร/ไม่รู้สิทธิ์
@@ -324,27 +330,40 @@ def format_schedules(
     `web_url` ใส่แล้วทุกรอบมีลิงก์ไปหน้ารอบนั้นบนเว็บระบบกิจกรรม
     """
     title = OPEN_SCHEDULES_TITLE if for_staff else SCHEDULES_TITLE
+    year_note = [] if for_staff else _student_year_note(student_year)
     if not items:
-        return f"[{title}] ไม่มีรายการที่ตรงเงื่อนไข"
+        return "\n".join([f"[{title}] ไม่มีรายการที่ตรงเงื่อนไข", *year_note])
 
     shown = items[:MAX_ITEMS]
     count = total if total is not None else len(items)
     header = _header(title, shown_count=len(shown), total_count=count)
 
-    lines = [header]
+    lines = [header, *year_note]
     if for_staff:
         lines.append(ANONYMOUS_SCHEDULES_NOTE if anonymous else STAFF_SCHEDULES_NOTE)
     for index, item in enumerate(shown, start=1):
         lines.extend(
-            _schedule_block(index, item.schedule, tags=_tags(item.schedule), web_url=web_url, tz=tz)
+            _schedule_block(
+                index,
+                item.schedule,
+                tags=_tags(item.schedule) if for_staff else [],
+                web_url=web_url,
+                tz=tz,
+            )
         )
     return "\n".join(lines)
 
 
+def _student_year_note(student_year: str | None) -> list[str]:
+    return [STUDENT_YEAR_NOTE.format(year=student_year)] if student_year else []
+
+
 def _tags(schedule: Schedule) -> list[str]:
-    """ป้ายของรอบ: บอกแค่ข้อเท็จจริงว่าเปิดให้กลุ่มไหน
+    """ป้ายของรอบ: บอกแค่ข้อเท็จจริงว่าเปิดให้กลุ่มไหน (ใช้กับรายการของบุคลากร/ผู้ไม่ login)
 
     ไม่มีป้าย "ไม่แน่ใจเรื่องสิทธิ์สมัคร" แล้ว (ตัดสิน 2026-11-10: ไม่รู้ก็ไม่พูด ให้ลิงก์ไปดูเงื่อนไขเอง)
+    รายการของนักศึกษาไม่มีป้าย: ทุกรอบผ่าน `filter_eligible` แล้ว ป้ายกลุ่มทำให้โมเดลแนะนำให้
+    "ตรวจว่าอยู่ในรายชื่อไหม" ทั้งที่ตรวจแล้ว (eval search-21 · 2026-11-10)
     """
     return [_target_text(schedule)] if schedule.is_restricted else []
 
@@ -371,7 +390,11 @@ def _target_text(schedule: Schedule) -> str:
 
 
 def format_recommendations(
-    recommendations: list[Recommendation], *, tz: tzinfo = BANGKOK, web_url: str | None = None
+    recommendations: list[Recommendation],
+    *,
+    tz: tzinfo = BANGKOK,
+    web_url: str | None = None,
+    student_year: str | None = None,
 ) -> str:
     """กิจกรรมที่ช่วยปิดหมวดที่ขาด เรียงตามที่ควรสมัครก่อน"""
     if not recommendations:
@@ -380,14 +403,14 @@ def format_recommendations(
     shown = recommendations[:MAX_ITEMS]
     header = _header("กิจกรรมที่แนะนำ", shown_count=len(shown), total_count=len(recommendations))
 
-    lines = [header]
+    lines = [header, *_student_year_note(student_year)]
     for index, item in enumerate(shown, start=1):
         lines.extend(
             _schedule_block(
                 index,
                 item.schedule,
                 covers=_covers_text(item),
-                tags=_tags(item.schedule),
+                tags=[],
                 web_url=web_url,
                 tz=tz,
             )
