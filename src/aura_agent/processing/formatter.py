@@ -41,6 +41,7 @@ MAX_ITEMS = 10
 MAX_REGISTRATIONS = 60  # ประวัติต้องแสดงครบ ไม่อย่างนั้นโมเดลตอบว่า "ไม่พบ" เมื่อรายการเก่ากว่า 10 อันดับ
 SUB_ITEM = "   - "  # รายการย่อยใต้เลขข้อ (markdown)
 # ลิงก์หน้ารอบกิจกรรมบนเว็บระบบกิจกรรม (มีกลุ่มเป้าหมายและปุ่มลงทะเบียน) · `{base}/activities/{id ของรอบ}`
+# อยู่ท้ายบรรทัดชื่อ: ทดสอบบน AI Connect 2026-11-10 โมเดลตัดบรรทัดลิงก์แยกทิ้ง แต่คงบรรทัดชื่อไว้
 LINK_LABEL = "สมัคร/ดูเงื่อนไข"
 RESTRICTED_TAG = "เปิดเฉพาะบางกลุ่ม"
 SCHEDULES_TITLE = "กิจกรรมที่สมัครได้"
@@ -349,14 +350,14 @@ def _tags(schedule: Schedule) -> list[str]:
 
 
 def _target_text(schedule: Schedule) -> str:
-    """กลุ่มที่รอบนี้เปิดรับ เช่น "เปิดเฉพาะบางกลุ่ม: ปีเข้า 66"
+    """กลุ่มที่รอบนี้เปิดรับ เช่น "เปิดเฉพาะบางกลุ่ม: นักศึกษารหัส 66"
 
-    ปีเข้าแสดงตามค่า `target_student_year_prefix` ตรงๆ (เว็บระบบกิจกรรมเรียกว่า "ปีเข้า")
+    รหัสปีที่เข้าแสดงตามค่า `target_student_year_prefix` ตรงๆ (ใน มรย. เรียกกันว่า "รหัส 66")
     รอบที่ระบุรายรหัสนักศึกษาบอกแค่ว่ามีรายชื่อ ไม่แสดงรหัส
     """
     parts = []
     if schedule.target_student_year_prefix:
-        parts.append("ปีเข้า " + ", ".join(schedule.target_student_year_prefix))
+        parts.append("นักศึกษารหัส " + ", ".join(schedule.target_student_year_prefix))
     if schedule.target_faculties:
         parts.append(", ".join(schedule.target_faculties))
     status = schedule.target_student_status
@@ -447,7 +448,7 @@ def _schedule_block(
     seats = _seats(schedule)
 
     lines = [
-        f"{index}. **{title}**",
+        f"{index}. **{title}**{_link(schedule, web_url)}",
         f"{SUB_ITEM}วันจัด: {when}",
         f"{SUB_ITEM}หมวด: {_with_type(schedule.category_label, schedule.type_label)}",
     ]
@@ -456,9 +457,17 @@ def _schedule_block(
     lines.append(f"{SUB_ITEM}ที่นั่ง{seats} · {window}" if seats else f"{SUB_ITEM}{window}")
     if tags:
         lines.append(f"{SUB_ITEM}หมายเหตุ: {' · '.join(tags)}")
-    if web_url:
-        lines.append(f"{SUB_ITEM}{LINK_LABEL}: {web_url.rstrip('/')}/activities/{schedule.id}")
     return lines
+
+
+def _link(schedule: Schedule, web_url: str | None) -> str:
+    """ลิงก์ท้ายบรรทัดชื่อ " · [สมัคร/ดูเงื่อนไข](url)" (ไม่มี `web_url` = ไม่มีลิงก์)
+
+    ไม่ฝังลิงก์ในชื่อ: eval 2026-11-10 ชื่อที่เป็นลิงก์ทำให้โมเดลตัดหมายเหตุกลุ่มเป้าหมายทิ้ง
+    """
+    if not web_url:
+        return ""
+    return f" · [{LINK_LABEL}]({web_url.rstrip('/')}/activities/{schedule.id})"
 
 
 def _covers_text(item: Recommendation) -> str:

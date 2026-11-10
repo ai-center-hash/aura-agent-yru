@@ -170,7 +170,7 @@ def test_format_schedules_states_target_group_without_guessing(schedules, studen
     items = [block for block in _items(text) if RESTRICTED_TAG in block]
     assert len(items) == 1
     assert "จิตอาสาซ่อมแซมอุปกรณ์การเรียน" in items[0]
-    assert f"   - หมายเหตุ: {RESTRICTED_TAG}: ปีเข้า 65 · " in items[0]
+    assert f"   - หมายเหตุ: {RESTRICTED_TAG}: นักศึกษารหัส 65 · " in items[0]
 
 
 def test_format_schedules_links_each_round(schedules, student, today):
@@ -180,8 +180,9 @@ def test_format_schedules_links_each_round(schedules, student, today):
     without = format_schedules(eligible)
 
     for item, block in zip(eligible, _items(text), strict=False):
-        assert block.splitlines()[-1] == (
-            f"   - {LINK_LABEL}: https://act.example.test/activities/{item.schedule.id}"
+        title = item.schedule.activity.title
+        assert block.splitlines()[0].endswith(
+            f". **{title}** · [{LINK_LABEL}](https://act.example.test/activities/{item.schedule.id})"
         )
     assert LINK_LABEL not in without
 
@@ -270,7 +271,7 @@ def test_format_recommendations(summary, schedules, student, today):
     assert items[0].startswith("1. **จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย ครั้งที่ 2**")
     # หมวดของรอบตรงกับหมวดที่ขาด จึงไม่พูดชื่อหมวดซ้ำ
     assert "   - ช่วยปิดช่องว่างได้ 6 ชม." in items[0]
-    assert f"{RESTRICTED_TAG}: ปีเข้า 65" in items[1]  # รอบ 108 ที่จำกัดปีเข้า
+    assert f"{RESTRICTED_TAG}: นักศึกษารหัส 65" in items[1]  # รอบ 108 ที่จำกัดรหัส 65
     assert "ไม่แน่ใจ" not in text
 
 
