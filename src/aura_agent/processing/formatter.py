@@ -43,7 +43,19 @@ SUB_ITEM = "   - "  # รายการย่อยใต้เลขข้อ 
 UNCERTAIN_TAG = "ไม่แน่ใจเรื่องสิทธิ์สมัคร"
 RESTRICTED_TAG = "เปิดเฉพาะบางกลุ่ม"
 SCHEDULES_TITLE = "กิจกรรมที่สมัครได้"
-OPEN_SCHEDULES_TITLE = "รอบกิจกรรมที่ยังรับสมัคร (ทุกกลุ่มผู้สมัคร)"
+# บุคลากร/ผู้ใช้ที่ไม่ login เห็นทุกรอบ · ทดสอบจริง 2026-11-10: หัวข้อเดิม "(ทุกกลุ่มผู้สมัคร)"
+# ทำให้โมเดลบอกบุคลากรว่า "สมัครได้ทุกรอบ" จึงต้องบอกชัดว่าเป็นกิจกรรมของนักศึกษา
+OPEN_SCHEDULES_TITLE = "รอบกิจกรรมของนักศึกษาที่ยังรับสมัคร (ทุกรอบ ไม่ได้คัดตามผู้ถาม)"
+STAFF_SCHEDULES_NOTE = (
+    "ผู้ถามเป็นบุคลากร ไม่ใช่ผู้สมัคร: ห้ามบอกว่าผู้ถามสมัครได้"
+    " ถ้าถูกถามว่าใครสมัครได้ ให้ตอบตามกลุ่มที่เปิดรับในหมายเหตุของแต่ละรอบ"
+)
+ANONYMOUS_SCHEDULES_NOTE = (
+    "ผู้ถามยังไม่ได้เข้าสู่ระบบ จึงไม่รู้ว่าสมัครได้ไหม: ถ้าถูกถามว่าใครสมัครได้ ให้ตอบตามกลุ่มที่เปิดรับในหมายเหตุของแต่ละรอบ"
+)
+# ค่าใน `target_student_status` (ชุดเดียวกับ `student_status` ของนักศึกษา)
+TARGET_STATUS_TEXT = {"transfer": "นักศึกษาเทียบโอน", "normal": "นักศึกษาปกติ (ไม่ใช่เทียบโอน)"}
+TARGET_CODES_TEXT = "นักศึกษาตามรายชื่อที่กำหนด"
 # ประเภทแบบตัวอย่างในคู่มือ ย่อได้โดยไม่เสียความหมาย
 SHORT_TYPES = {"กิจกรรมบังคับ": "บังคับ", "กิจกรรมเลือก": "เลือก"}
 
@@ -284,7 +296,8 @@ def format_not_student(unit: str | None = None) -> str:
         "คำถามเรื่องกิจกรรมของตัวบุคลากรเอง (ความคืบหน้า หมวดที่ขาด ประวัติ คำแนะนำ):"
         " บุคลากรไม่มีกรอบกิจกรรม จึงไม่มีหมวดที่ผ่าน หมวดที่ขาด หรือชั่วโมงใดๆ เลย"
         " ห้ามบอกชื่อหมวดหรือตัวเลขใดๆ ให้บอกสุภาพว่าส่วนนี้ใช้ได้เฉพาะนักศึกษา",
-        "การค้นหารอบกิจกรรมใช้ได้ตามปกติ (เห็นทุกรอบที่ยังรับสมัคร ไม่ได้คัดตามคุณสมบัติผู้สมัคร)",
+        "การค้นหารอบกิจกรรมใช้ได้ตามปกติ (เห็นทุกรอบที่ยังรับสมัคร ไม่ได้คัดตามคุณสมบัติผู้สมัคร)"
+        " กิจกรรมเป็นของนักศึกษา บุคลากรไม่ได้สมัครเอง",
     ]
     return "\n".join(lines)
 
@@ -298,11 +311,13 @@ def format_schedules(
     total: int | None = None,
     tz: tzinfo = BANGKOK,
     for_staff: bool = False,
+    anonymous: bool = False,
 ) -> str:
     """รายการกิจกรรมที่สมัครได้ (`total` ใส่เมื่อจำนวนทั้งหมดมากกว่าที่ส่งเข้ามา)
 
-    `for_staff=True` ใช้กับผลของ `filter_open` (บุคลากร): เปลี่ยนหัวข้อ
-    และติดป้ายรอบที่จำกัดกลุ่มเป้าหมาย แทนการบอกว่าผู้ใช้สมัครได้หรือไม่
+    `for_staff=True` ใช้กับผลของ `filter_open` (บุคลากร หรือผู้ใช้ที่ไม่ login เมื่อ
+    `anonymous=True`): เปลี่ยนหัวข้อ บอกว่าผู้ถามไม่ใช่ผู้สมัคร/ไม่รู้สิทธิ์
+    และติดป้ายกลุ่มที่แต่ละรอบเปิดรับ แทนการบอกว่าผู้ใช้สมัครได้หรือไม่
     """
     title = OPEN_SCHEDULES_TITLE if for_staff else SCHEDULES_TITLE
     if not items:
@@ -313,14 +328,37 @@ def format_schedules(
     header = _header(title, shown_count=len(shown), total_count=count)
 
     lines = [header]
+    if for_staff:
+        lines.append(ANONYMOUS_SCHEDULES_NOTE if anonymous else STAFF_SCHEDULES_NOTE)
     for index, item in enumerate(shown, start=1):
         tags = []
         if for_staff and item.schedule.is_restricted:
-            tags.append(RESTRICTED_TAG)
+            tags.append(_target_text(item.schedule))
         if item.eligibility_uncertain:
             tags.append(UNCERTAIN_TAG)
         lines.extend(_schedule_block(index, item.schedule, tags=tags, tz=tz))
     return "\n".join(lines)
+
+
+def _target_text(schedule: Schedule) -> str:
+    """กลุ่มที่รอบนี้เปิดรับ เช่น "เปิดเฉพาะบางกลุ่ม: รุ่นรหัส 66"
+
+    รุ่นรหัสแสดงตามค่า `target_student_year_prefix` ตรงๆ (กติกาการเทียบยังรอ Q4)
+    รอบที่ระบุรายรหัสนักศึกษาบอกแค่ว่ามีรายชื่อ ไม่แสดงรหัส
+    """
+    parts = []
+    if schedule.target_student_year_prefix:
+        parts.append("รุ่นรหัส " + ", ".join(schedule.target_student_year_prefix))
+    if schedule.target_faculties:
+        parts.append(", ".join(schedule.target_faculties))
+    status = schedule.target_student_status
+    if status:
+        parts.append(TARGET_STATUS_TEXT.get(status, f"สถานะนักศึกษา {status}"))
+    if schedule.target_student_codes:
+        parts.append(TARGET_CODES_TEXT)
+    if not parts:
+        return RESTRICTED_TAG
+    return f"{RESTRICTED_TAG}: {' · '.join(parts)}"
 
 
 def format_recommendations(recommendations: list[Recommendation], *, tz: tzinfo = BANGKOK) -> str:
