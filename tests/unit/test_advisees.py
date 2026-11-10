@@ -16,6 +16,7 @@ from aura_agent.data.act_client import ADVISEES_LABEL, SUMMARY_USER_PATH, USERS_
 from aura_agent.data.passport import USERINFO_PATH
 from aura_agent.data.schemas import Advisee, PassportUser
 from aura_agent.processing import StudentProfile, format_advisees
+from aura_agent.processing.formatter import COHORT_SCHEDULES_NOTE
 from aura_agent.tools import TOOLS, get_advisee_progress, list_my_advisees
 from aura_agent.tools.advisees import NOT_ADVISEE_MESSAGE, STAFF_ONLY_MESSAGE
 
@@ -312,6 +313,33 @@ async def test_progress_tool_rejects_non_codes(advisor_client, tool_config, bad)
 
     assert "list_my_advisees" in text
     assert advisor_client.calls == []
+
+
+@pytest.mark.parametrize("cohort", ["67", " 67 "])
+async def test_progress_tool_answers_cohort_with_rounds(
+    advisor_client, tool_config, schedules, frozen_today, cohort
+):
+    """บุคลากรถาม "นักศึกษารหัส 67 สมัครกิจกรรมอะไรได้บ้าง" แล้วโมเดลส่ง "67" มา (2026-11-10)
+
+    โมเดลไม่ยอมเรียก search_activities ต่อเอง จึงตอบรอบของรุ่นนี้จาก tool นี้เลย
+    """
+    seen = []
+
+    async def get_schedules(jwt, **kwargs):
+        seen.append(jwt)
+        return schedules
+
+    advisor_client.get_schedules = get_schedules
+
+    text = await get_advisee_progress.ainvoke(
+        {"student_code": cohort, "state": {"student": TEACHER}}, tool_config
+    )
+
+    assert COHORT_SCHEDULES_NOTE.format(cohort="67") in text
+    assert "ค่ายอาสาพัฒนาโรงเรียนตำรวจตระเวนชายแดน" in text  # รอบ 104 เปิดเฉพาะรหัส 67
+    assert "จิตอาสาซ่อมแซม" not in text  # รอบ 108 เปิดเฉพาะรหัส 65
+    assert seen == [""]  # ข้อมูลสาธารณะ ไม่ส่ง token ต่อ
+    assert advisor_client.calls == []  # ไม่ได้ดึงข้อมูลนักศึกษาคนใด
 
 
 # ---- prompt + graph ----

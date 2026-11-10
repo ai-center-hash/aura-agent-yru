@@ -240,3 +240,15 @@ def test_student_profile_from_passport():
     assert profile.student_id == "406500001"
     assert profile.name == "นักศึกษาทดสอบ ระบบ"
     assert profile.faculty == "คณะวิทยาศาสตร์และเทคโนโลยี"
+
+
+def test_filter_for_cohort_drops_rounds_for_other_cohorts(schedules, today):
+    from aura_agent.processing import filter_for_cohort, filter_open
+
+    opened = filter_open(schedules, today)
+    kept = ids(filter_for_cohort(opened, "67"))
+
+    assert 104 in kept  # รหัส 67
+    assert 108 not in kept  # รหัส 65
+    assert 101 in kept  # ไม่จำกัดกลุ่ม
+    assert 105 in kept  # จำกัดเฉพาะเทียบโอน ไม่ได้จำกัดรุ่น
