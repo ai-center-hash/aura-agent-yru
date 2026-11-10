@@ -21,7 +21,7 @@ from ..tools import TOOLS, optional_jwt_from, tools_for
 from .errors import LLM_ERRORS, LLMUnavailable
 from .history import recent_messages
 from .llm import get_llm
-from .prompts import mentions_student_code, render_system_prompt
+from .prompts import asks_class_year, mentions_student_code, render_system_prompt
 from .state import MAX_TOOL_ROUNDS, STUDENT_TTL_S, AgentState
 
 _tool_node = ToolNode(TOOLS)
@@ -97,6 +97,7 @@ async def agent(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
         state.get("student"),
         state.get("progress_text"),
         show_code=mentions_student_code(messages),
+        show_no_class_year=asks_class_year(messages),
     )
 
     try:

@@ -89,6 +89,10 @@ def test_render_has_no_code_for_staff_or_anonymous(student):
         ("ผมยังขาดกิจกรรมหมวดไหน", False),
         ("ขอดูกิจกรรมวันที่ 2026-11-05", False),
         ("เลข 1234567890123 นี้คืออะไร", False),  # 13 หลัก ไม่ใช่รหัสนักศึกษา
+        ("ผมเป็นนักศึกษารหัสอะไร", True),  # ถามถึงรหัส/ชั้นปีของตัวเอง (2026-11-10)
+        ("ผมอยู่ชั้นปีที่เท่าไหร่", True),
+        ("ผมเข้าปีไหน", True),
+        ("มีกิจกรรมอะไรเปิดรับสมัครบ้าง", False),
     ],
 )
 def test_mentions_student_code(text, expected):
@@ -159,3 +163,23 @@ def test_get_llm_reuses_one_instance(monkeypatch):
         assert get_llm() is get_llm()
     finally:
         set_llm(None)
+
+
+def test_class_year_question_adds_cohort_and_unknown_class_year(student):
+    """ถามชั้นปี/ปีที่เข้า: บอกรหัสปีที่เข้าให้ (เคยตอบผิดเป็น 68) และบอกว่าไม่มีชั้นปี (เคยเดา 3)"""
+    text = render_system_prompt(TODAY, student, None, show_code=True)
+    asked = render_system_prompt(TODAY, student, None, show_code=True, show_no_class_year=True)
+
+    assert f"(รหัส {student.student_id}) |" in text  # อ้างรหัสอย่างเดียว: prompt เหมือนเดิม (safety-12)
+    assert f"(รหัส {student.student_id} · นักศึกษารหัส {student.student_id[2:4]} · " in asked
+    assert "ไม่มีข้อมูลว่าตอนนี้อยู่ชั้นปีที่เท่าไร" in asked
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [("ผมอยู่ชั้นปีที่เท่าไหร่", True), ("ผมเข้าปีไหน", True), ("ฉันรหัส 6510000001", False)],
+)
+def test_asks_class_year(text, expected):
+    from aura_agent.agent.prompts import asks_class_year
+
+    assert asks_class_year([HumanMessage(text)]) is expected

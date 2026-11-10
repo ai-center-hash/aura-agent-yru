@@ -12,12 +12,16 @@ from pathlib import Path
 
 from langchain_core.messages import BaseMessage, HumanMessage
 
-from ..processing import StudentProfile, thai_date
+from ..processing import StudentProfile, entry_year, thai_date
 
 PROMPT_PATH = Path(__file__).parents[3] / "prompts" / "system_prompt.th.md"
 
 _LEADING_COMMENT = re.compile(r"\A\s*<!--.*?-->\s*", re.DOTALL)
 _CODE_LIKE = re.compile(r"(?<!\d)\d{9,10}(?!\d)")  # แบบเดียวกับ STUDENT_CODE ของ tools/advisees.py
+# ถามถึงรหัส/ชั้นปีของตัวเอง · eval 2026-11-10: ไม่มีรหัสใน prompt แล้วโมเดลกุรหัส "6510000001"
+# และเดา "ชั้นปีที่ 3" จากชื่อหมวด (AI Connect: นักศึกษารหัส 66 ถูกบอกว่าเป็นรหัส 68)
+_ASKS_OWN_IDENTITY = re.compile(r"รหัส|ชั้นปี|ปีที่เข้า|เข้าปี|ปีไหน|ปีอะไร|ปีกี่|อยู่ปี")
+_ASKS_CLASS_YEAR = re.compile(r"ชั้นปี|ปีที่เข้า|เข้าปี|ปีไหน|ปีอะไร|ปีกี่|อยู่ปี")
 
 UNKNOWN_NAME = "ไม่ทราบชื่อ"
 UNKNOWN_FIELD = "ไม่ระบุ"
@@ -75,16 +79,19 @@ def render_system_prompt(
     progress_text: str | None,
     *,
     show_code: bool = False,
+    show_no_class_year: bool = False,
     template: str | None = None,
 ) -> str:
     """เติมค่าลง prompt ใหม่ทุกครั้งที่เรียก LLM (ไม่เก็บลง messages) · ทุกบทบาทใช้ prompt เดียวกัน
 
     `show_code`: ใส่รหัสนักศึกษาจริงต่อท้ายชื่อ (ดู `mentions_student_code`)
+    `show_no_class_year`: ใส่ "นักศึกษารหัส 66" + บอกว่าไม่มีข้อมูลชั้นปี (ดู `asks_class_year`)
+    ใส่เฉพาะตอนถูกถาม เพราะใส่ตอนผู้ใช้อ้างรหัสแล้ว eval safety-12 พลิก
     """
     return (template or load_template()).format(
         today=f"{thai_date(today)} ({today.isoformat()})",
         student_name=student.name if student else UNKNOWN_NAME,
-        student_code=_student_code(student) if show_code else "",
+        student_code=_student_code(student, no_class_year=show_no_class_year) if show_code else "",
         student_faculty=(student.faculty if student else None) or UNKNOWN_FIELD,
         student_major=(student.major if student else None) or UNKNOWN_FIELD,
         student_type=_student_type(student),
@@ -105,24 +112,35 @@ def _privacy(student: StudentProfile | None) -> dict[str, str]:
 
 
 def mentions_student_code(messages: Sequence[BaseMessage]) -> bool:
-    """ผู้ใช้พิมพ์ตัวเลขแบบรหัสนักศึกษาในบทสนทนาหรือไม่
+    """ผู้ใช้พิมพ์ตัวเลขแบบรหัสนักศึกษา หรือถามถึงรหัส/ชั้นปี ในบทสนทนาหรือไม่
 
     tester บอกให้บอท "จำ" รหัสของคนอื่น โมเดลไม่รู้รหัสจริงจึงตอบชื่อจริงคู่กับรหัสที่อ้าง (2026-10-29)
+    ถามว่า "ผมรหัสอะไร/อยู่ปีไหน" แล้วโมเดลกุรหัสและชั้นปีขึ้นเอง (2026-11-10)
     ใส่รหัสจริงเฉพาะบทสนทนาแบบนี้ เพราะใส่ทุกครั้งแล้วข้อ eval อื่นพลิก (progress-15, recommend-09)
     """
     return any(
         isinstance(message, HumanMessage)
         and isinstance(message.content, str)
-        and _CODE_LIKE.search(message.content)
+        and (_CODE_LIKE.search(message.content) or _ASKS_OWN_IDENTITY.search(message.content))
         for message in messages
     )
 
 
-def _student_code(student: StudentProfile | None) -> str:
+def asks_class_year(messages: Sequence[BaseMessage]) -> bool:
+    """ผู้ใช้ถามถึงชั้นปีหรือปีที่เข้าของตัวเองในข้อความล่าสุดหรือไม่"""
+    last = next((m for m in reversed(messages) if isinstance(m, HumanMessage)), None)
+    return bool(last and isinstance(last.content, str) and _ASKS_CLASS_YEAR.search(last.content))
+
+
+def _student_code(student: StudentProfile | None, *, no_class_year: bool = False) -> str:
     """รหัสจริงจาก token · บุคลากรและผู้ใช้ทั่วไปไม่มีรหัส จึงได้ prompt เหมือนเดิมทุกตัวอักษร"""
     if student is None or not student.is_student or not student.student_id:
         return ""
-    return f" (รหัส {student.student_id})"
+    year = entry_year(student) if no_class_year else None
+    cohort = f" · นักศึกษารหัส {year}" if year else ""
+    # ชื่อหมวด "จิตอาสา ... ชั้นปีที่ 3" ไม่ใช่ชั้นปีของผู้ใช้ (eval safety-14 เคยเดาจากตรงนั้น)
+    unknown = " · ระบบไม่มีข้อมูลว่าตอนนี้อยู่ชั้นปีที่เท่าไร" if no_class_year else ""
+    return f" (รหัส {student.student_id}{cohort}{unknown})"
 
 
 def _student_type(student: StudentProfile | None) -> str:
