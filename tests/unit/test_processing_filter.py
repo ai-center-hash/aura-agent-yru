@@ -74,13 +74,23 @@ def test_student_without_faculty_is_dropped_from_restricted_round(schedules, stu
     assert 108 not in ids(filter_eligible(schedules, no_faculty, today))
 
 
-def test_year_prefix_round_is_flagged_uncertain(schedules, student, today):
+def test_year_prefix_matches_digits_3_4_of_student_code(schedules, student, today):
+    """รอบ 108 เปิดเฉพาะรหัส 65 · นักศึกษาใน fixture รหัส 406510024 (หลัก 3–4 = 65)"""
     eligible = filter_eligible(schedules, student, today)
 
-    flagged = {item.schedule.id for item in eligible if item.eligibility_uncertain}
-    assert flagged == {108}
-
     item = next(item for item in eligible if item.schedule.id == 108)
+    assert item.eligibility_uncertain is False
+
+    year_66 = replace(student, student_id="406610024")
+    assert 108 not in ids(filter_eligible(schedules, year_66, today))
+
+
+def test_year_prefix_round_is_kept_when_code_is_unknown(schedules, student, today):
+    no_code = replace(student, student_id=None)
+
+    item = next(i for i in filter_eligible(schedules, no_code, today) if i.schedule.id == 108)
+
+    assert item.eligibility_uncertain is True
     assert item.uncertain_reason == module.UNCERTAIN_YEAR_PREFIX
 
 
@@ -102,7 +112,7 @@ def test_upcoming_round_is_kept(schedules, student, today):
 
 def test_round_without_deadline_is_kept(schedules, student, today):
     without_deadline = [
-        schedule.model_copy(update={"registration_end_date": None})
+        schedule.model_copy(update={"registration_end_date": None, "is_restricted": False})
         for schedule in schedules
         if schedule.id == 88
     ]
@@ -114,12 +124,30 @@ def test_empty_input(student, today):
     assert filter_eligible([], student, today) == []
 
 
-def test_year_prefix_rule_is_still_open():
-    """Q4 ยังไม่มีคำตอบ: ธงต้องเป็น False และฟังก์ชันเทียบรุ่นต้องยังใช้ไม่ได้"""
-    assert module.YEAR_PREFIX_RULE_KNOWN is False
+@pytest.mark.parametrize(
+    ("code", "expected"),
+    [
+        ("406600101", "66"),
+        (" 406710024 ", "67"),
+        (None, None),
+        ("", None),
+        ("40", None),
+        ("ab66xxxxx", "66"),
+        ("40ab12345", None),
+    ],
+)
+def test_entry_year_from_student_code(student, code, expected):
+    assert module.entry_year(replace(student, student_id=code)) == expected
 
-    with pytest.raises(NotImplementedError):
-        module._matches_year_prefix(None, None)
+
+@pytest.mark.parametrize(
+    ("targets", "kept"), [(["65"], True), ([65], True), (["2565"], True), (["66", "67"], False)]
+)
+def test_year_prefix_value_shapes(schedules, student, today, targets, kept):
+    round_ = next(s for s in schedules if s.id == 108)
+    round_ = round_.model_copy(update={"target_student_year_prefix": targets})
+
+    assert (108 in ids(filter_eligible([round_], student, today))) is kept
 
 
 def test_student_profile_from_summary_user(summary):
@@ -141,6 +169,7 @@ def test_restricted_round_without_status_target(schedules, student, today):
             update={
                 "target_faculties": [student.faculty],
                 "target_student_status": None,
+                "target_student_year_prefix": ["65"],
             }
         )
         for schedule in schedules
@@ -150,7 +179,7 @@ def test_restricted_round_without_status_target(schedules, student, today):
     eligible = filter_eligible(open_to_all_statuses, student, today)
 
     assert ids(eligible) == [104]
-    assert eligible[0].eligibility_uncertain is True  # ยังจำกัดรุ่นปี 67
+    assert eligible[0].eligibility_uncertain is False  # รหัส 65 ตรงกับนักศึกษา
 
 
 # ---- รอบที่จำกัดด้วยรายรหัสนักศึกษา (ข้อมูลจริงใช้แบบนี้ 30/32 รอบ) ----

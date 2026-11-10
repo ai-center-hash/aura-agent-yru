@@ -47,7 +47,8 @@ def test_recommend_passes_uncertain_flag(summary, schedules, student, today):
     recommendations = recommend(gaps, eligible, limit=10)
 
     flagged = {item.schedule.id for item in recommendations if item.eligibility_uncertain}
-    assert flagged == {108}
+    assert flagged == set()  # รู้รหัสนักศึกษาแล้ว เทียบรหัสปีที่เข้าได้ ไม่มีรอบที่ไม่แน่ใจ
+    assert 108 in {item.schedule.id for item in recommendations}
 
 
 def test_recommend_without_gaps_returns_empty(schedules, student, today):

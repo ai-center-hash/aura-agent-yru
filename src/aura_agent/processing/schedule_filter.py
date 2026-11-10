@@ -3,11 +3,10 @@
 ตัดทิ้งเมื่อ
 - รอบเต็ม (`is_full`)
 - หมดเวลารับสมัครไปแล้ว (`registration_end_date` < วันนี้)
-- จำกัดกลุ่มเป้าหมายและคุณสมบัติไม่ตรง (คณะ / ประเภทนักศึกษา)
+- จำกัดกลุ่มเป้าหมายและคุณสมบัติไม่ตรง (รายรหัส / คณะ / ประเภทนักศึกษา / รหัสปีที่เข้า)
 
-เงื่อนไข "รุ่นปี" (`target_student_year_prefix`) ยังเทียบไม่ได้เพราะ **Q4 ยังไม่มีคำตอบ**
-ว่าค่านี้เทียบกับปีที่เข้าศึกษาหรือสองตัวแรกของรหัสนักศึกษา จึงปล่อยผ่านไว้ก่อน
-แล้วติดป้าย `eligibility_uncertain` ให้ผู้ใช้ไปตรวจเงื่อนไขในระบบกิจกรรมเองก่อนสมัคร
+รหัสปีที่เข้า (`target_student_year_prefix` เช่น "66") เทียบกับหลักที่ 3–4 ของรหัสนักศึกษา
+(รหัส มรย. รูปแบบ 40**66**xxxxx · Q4 ยืนยันโดยผู้ใช้ 2026-11-10) · ไม่รู้รหัสของผู้ใช้ → ปล่อยผ่าน
 """
 
 from datetime import date
@@ -16,10 +15,10 @@ from ..data.schemas import Schedule
 from .formatter import BANGKOK
 from .models import EligibleSchedule, StudentProfile
 
-# เปลี่ยนเป็น True เมื่อ Q4 มีคำตอบแล้ว และเติมวิธีเทียบใน `_matches_year_prefix`
-YEAR_PREFIX_RULE_KNOWN = False
+# ตำแหน่งของปีที่เข้าในรหัสนักศึกษา: "406600101"[2:4] = "66"
+ENTRY_YEAR_SLICE = slice(2, 4)
 
-UNCERTAIN_YEAR_PREFIX = "จำกัดรุ่นปี"
+UNCERTAIN_YEAR_PREFIX = "จำกัดรหัสปีที่เข้า แต่ไม่ทราบรหัสของผู้ใช้"
 UNCERTAIN_STUDENT_CODES = "จำกัดรายชื่อนักศึกษา แต่ไม่ทราบรหัสของผู้ใช้"
 
 
@@ -42,6 +41,8 @@ def filter_eligible(
         if not _matches_faculty(schedule, student):
             continue
         if not _matches_student_status(schedule, student):
+            continue
+        if not _matches_year_prefix(schedule, student):
             continue
 
         reason = _uncertain_reason(schedule, student)
@@ -95,7 +96,7 @@ def _matches_student_code(schedule: Schedule, student: StudentProfile) -> bool:
 def _uncertain_reason(schedule: Schedule, student: StudentProfile) -> str | None:
     if schedule.target_student_codes and not student.student_id:
         return UNCERTAIN_STUDENT_CODES
-    if schedule.target_student_year_prefix and not YEAR_PREFIX_RULE_KNOWN:
+    if schedule.target_student_year_prefix and entry_year(student) is None:
         return UNCERTAIN_YEAR_PREFIX
     return None
 
@@ -113,9 +114,22 @@ def _matches_student_status(schedule: Schedule, student: StudentProfile) -> bool
     return target == student.student_status
 
 
-def _matches_year_prefix(schedule: Schedule, student: StudentProfile) -> bool:
-    """ยังใช้ไม่ได้จนกว่า Q4 จะมีคำตอบ (ดู `YEAR_PREFIX_RULE_KNOWN`)
+def entry_year(student: StudentProfile) -> str | None:
+    """ปีที่เข้า 2 หลักจากรหัสนักศึกษา (มาจาก token ไม่ใช่จากข้อความ) · ไม่รู้ → None"""
+    code = (student.student_id or "").strip()
+    year = code[ENTRY_YEAR_SLICE]
+    if len(code) < ENTRY_YEAR_SLICE.stop or not year.isdigit():
+        return None
+    return year
 
-    เมื่อรู้แล้วให้เทียบ `schedule.target_student_year_prefix` กับฟิลด์ที่ถูกต้องของนักศึกษา
+
+def _matches_year_prefix(schedule: Schedule, student: StudentProfile) -> bool:
+    """รอบที่จำกัดรหัสปีที่เข้า สมัครได้เฉพาะนักศึกษาที่รหัสหลักที่ 3–4 ตรง
+
+    ค่าใน API เป็น 2 หลัก ("66") ถ้าวันหลังมาเป็น พ.ศ. 4 หลัก ("2566") ใช้ 2 หลักท้าย
     """
-    raise NotImplementedError("รอผล Q4 ว่า target_student_year_prefix เทียบกับฟิลด์ไหน")
+    targets = {str(value).strip()[-2:] for value in schedule.target_student_year_prefix}
+    if not targets:
+        return True
+    year = entry_year(student)
+    return year is None or year in targets

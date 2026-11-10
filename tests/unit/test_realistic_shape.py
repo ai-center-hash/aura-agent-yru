@@ -95,7 +95,7 @@ def test_student_code_list_controls_eligibility(persona, student):
 
     assert set(eligible) == {7001, 7003, 7004, 7005, 7007}
     assert 7002 not in eligible  # รหัสเราไม่อยู่ในรายชื่อ
-    assert eligible[7007].eligibility_uncertain is True  # จำกัดรุ่นปี (Q4)
+    assert eligible[7007].eligibility_uncertain is False  # จำกัดรหัส 66 ตรงกับรหัส 406600123
     assert eligible[7005].eligibility_uncertain is False  # รายชื่อว่าง = ไม่จำกัดด้วยรหัส
 
 
