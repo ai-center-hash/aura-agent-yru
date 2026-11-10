@@ -18,7 +18,12 @@ from aura_agent.processing import (
     thai_datetime,
     thai_period,
 )
-from aura_agent.processing.formatter import MAX_ITEMS, MAX_REGISTRATIONS, UNCERTAIN_TAG
+from aura_agent.processing.formatter import (
+    LINK_LABEL,
+    MAX_ITEMS,
+    MAX_REGISTRATIONS,
+    RESTRICTED_TAG,
+)
 
 
 def by_id(schedules, schedule_id):
@@ -155,15 +160,30 @@ def test_format_schedules(schedules, student, today):
     assert lines[5].startswith("2. **")
 
 
-def test_format_schedules_marks_uncertain_eligibility(schedules, student, today):
+def test_format_schedules_states_target_group_without_guessing(schedules, student, today):
+    """ไม่มีป้าย "ไม่แน่ใจเรื่องสิทธิ์สมัคร" แล้ว (2026-11-10) บอกแค่ว่ารอบเปิดให้กลุ่มไหน"""
     eligible = filter_eligible(schedules, student, today)
 
     text = format_schedules(eligible)
 
-    items = [block for block in _items(text) if UNCERTAIN_TAG in block]
+    assert "ไม่แน่ใจ" not in text
+    items = [block for block in _items(text) if RESTRICTED_TAG in block]
     assert len(items) == 1
     assert "จิตอาสาซ่อมแซมอุปกรณ์การเรียน" in items[0]
-    assert f"   - หมายเหตุ: {UNCERTAIN_TAG}" in items[0]
+    assert f"   - หมายเหตุ: {RESTRICTED_TAG}: ปีเข้า 65 · " in items[0]
+
+
+def test_format_schedules_links_each_round(schedules, student, today):
+    eligible = filter_eligible(schedules, student, today)
+
+    text = format_schedules(eligible, web_url="https://act.example.test/")
+    without = format_schedules(eligible)
+
+    for item, block in zip(eligible, _items(text), strict=False):
+        assert block.splitlines()[-1] == (
+            f"   - {LINK_LABEL}: https://act.example.test/activities/{item.schedule.id}"
+        )
+    assert LINK_LABEL not in without
 
 
 def test_format_schedules_shows_opening_date_for_upcoming_round(schedules, student, today):
@@ -250,7 +270,8 @@ def test_format_recommendations(summary, schedules, student, today):
     assert items[0].startswith("1. **จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย ครั้งที่ 2**")
     # หมวดของรอบตรงกับหมวดที่ขาด จึงไม่พูดชื่อหมวดซ้ำ
     assert "   - ช่วยปิดช่องว่างได้ 6 ชม." in items[0]
-    assert UNCERTAIN_TAG in items[1]  # รอบ 108 ที่จำกัดรุ่นปี
+    assert f"{RESTRICTED_TAG}: ปีเข้า 65" in items[1]  # รอบ 108 ที่จำกัดปีเข้า
+    assert "ไม่แน่ใจ" not in text
 
 
 def test_format_recommendations_names_gap_when_labels_differ(schedules):

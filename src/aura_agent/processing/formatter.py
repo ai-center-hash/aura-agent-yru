@@ -40,7 +40,8 @@ THAI_MONTHS = (
 MAX_ITEMS = 10
 MAX_REGISTRATIONS = 60  # ประวัติต้องแสดงครบ ไม่อย่างนั้นโมเดลตอบว่า "ไม่พบ" เมื่อรายการเก่ากว่า 10 อันดับ
 SUB_ITEM = "   - "  # รายการย่อยใต้เลขข้อ (markdown)
-UNCERTAIN_TAG = "ไม่แน่ใจเรื่องสิทธิ์สมัคร"
+# ลิงก์หน้ารอบกิจกรรมบนเว็บระบบกิจกรรม (มีกลุ่มเป้าหมายและปุ่มลงทะเบียน) · `{base}/activities/{id ของรอบ}`
+LINK_LABEL = "สมัคร/ดูเงื่อนไข"
 RESTRICTED_TAG = "เปิดเฉพาะบางกลุ่ม"
 SCHEDULES_TITLE = "กิจกรรมที่สมัครได้"
 # บุคลากร/ผู้ใช้ที่ไม่ login เห็นทุกรอบ · ทดสอบจริง 2026-11-10: หัวข้อเดิม "(ทุกกลุ่มผู้สมัคร)"
@@ -312,12 +313,14 @@ def format_schedules(
     tz: tzinfo = BANGKOK,
     for_staff: bool = False,
     anonymous: bool = False,
+    web_url: str | None = None,
 ) -> str:
     """รายการกิจกรรมที่สมัครได้ (`total` ใส่เมื่อจำนวนทั้งหมดมากกว่าที่ส่งเข้ามา)
 
     `for_staff=True` ใช้กับผลของ `filter_open` (บุคลากร หรือผู้ใช้ที่ไม่ login เมื่อ
     `anonymous=True`): เปลี่ยนหัวข้อ บอกว่าผู้ถามไม่ใช่ผู้สมัคร/ไม่รู้สิทธิ์
     และติดป้ายกลุ่มที่แต่ละรอบเปิดรับ แทนการบอกว่าผู้ใช้สมัครได้หรือไม่
+    `web_url` ใส่แล้วทุกรอบมีลิงก์ไปหน้ารอบนั้นบนเว็บระบบกิจกรรม
     """
     title = OPEN_SCHEDULES_TITLE if for_staff else SCHEDULES_TITLE
     if not items:
@@ -331,24 +334,29 @@ def format_schedules(
     if for_staff:
         lines.append(ANONYMOUS_SCHEDULES_NOTE if anonymous else STAFF_SCHEDULES_NOTE)
     for index, item in enumerate(shown, start=1):
-        tags = []
-        if for_staff and item.schedule.is_restricted:
-            tags.append(_target_text(item.schedule))
-        if item.eligibility_uncertain:
-            tags.append(UNCERTAIN_TAG)
-        lines.extend(_schedule_block(index, item.schedule, tags=tags, tz=tz))
+        lines.extend(
+            _schedule_block(index, item.schedule, tags=_tags(item.schedule), web_url=web_url, tz=tz)
+        )
     return "\n".join(lines)
 
 
-def _target_text(schedule: Schedule) -> str:
-    """กลุ่มที่รอบนี้เปิดรับ เช่น "เปิดเฉพาะบางกลุ่ม: รุ่นรหัส 66"
+def _tags(schedule: Schedule) -> list[str]:
+    """ป้ายของรอบ: บอกแค่ข้อเท็จจริงว่าเปิดให้กลุ่มไหน
 
-    รุ่นรหัสแสดงตามค่า `target_student_year_prefix` ตรงๆ (กติกาการเทียบยังรอ Q4)
+    ไม่มีป้าย "ไม่แน่ใจเรื่องสิทธิ์สมัคร" แล้ว (ตัดสิน 2026-11-10: ไม่รู้ก็ไม่พูด ให้ลิงก์ไปดูเงื่อนไขเอง)
+    """
+    return [_target_text(schedule)] if schedule.is_restricted else []
+
+
+def _target_text(schedule: Schedule) -> str:
+    """กลุ่มที่รอบนี้เปิดรับ เช่น "เปิดเฉพาะบางกลุ่ม: ปีเข้า 66"
+
+    ปีเข้าแสดงตามค่า `target_student_year_prefix` ตรงๆ (เว็บระบบกิจกรรมเรียกว่า "ปีเข้า")
     รอบที่ระบุรายรหัสนักศึกษาบอกแค่ว่ามีรายชื่อ ไม่แสดงรหัส
     """
     parts = []
     if schedule.target_student_year_prefix:
-        parts.append("รุ่นรหัส " + ", ".join(schedule.target_student_year_prefix))
+        parts.append("ปีเข้า " + ", ".join(schedule.target_student_year_prefix))
     if schedule.target_faculties:
         parts.append(", ".join(schedule.target_faculties))
     status = schedule.target_student_status
@@ -361,7 +369,9 @@ def _target_text(schedule: Schedule) -> str:
     return f"{RESTRICTED_TAG}: {' · '.join(parts)}"
 
 
-def format_recommendations(recommendations: list[Recommendation], *, tz: tzinfo = BANGKOK) -> str:
+def format_recommendations(
+    recommendations: list[Recommendation], *, tz: tzinfo = BANGKOK, web_url: str | None = None
+) -> str:
     """กิจกรรมที่ช่วยปิดหมวดที่ขาด เรียงตามที่ควรสมัครก่อน"""
     if not recommendations:
         return "[กิจกรรมที่แนะนำ] ไม่มีรายการ"
@@ -371,9 +381,15 @@ def format_recommendations(recommendations: list[Recommendation], *, tz: tzinfo 
 
     lines = [header]
     for index, item in enumerate(shown, start=1):
-        tags = [UNCERTAIN_TAG] if item.eligibility_uncertain else []
         lines.extend(
-            _schedule_block(index, item.schedule, covers=_covers_text(item), tags=tags, tz=tz)
+            _schedule_block(
+                index,
+                item.schedule,
+                covers=_covers_text(item),
+                tags=_tags(item.schedule),
+                web_url=web_url,
+                tz=tz,
+            )
         )
     return "\n".join(lines)
 
@@ -415,6 +431,7 @@ def _schedule_block(
     *,
     covers: str | None = None,
     tags: list[str],
+    web_url: str | None = None,
     tz: tzinfo,
 ) -> list[str]:
     """รอบกิจกรรม 1 รอบในรูปแบบที่ผู้ใช้เห็น (ชื่อตัวหนา + รายการย่อย)
@@ -439,6 +456,8 @@ def _schedule_block(
     lines.append(f"{SUB_ITEM}ที่นั่ง{seats} · {window}" if seats else f"{SUB_ITEM}{window}")
     if tags:
         lines.append(f"{SUB_ITEM}หมายเหตุ: {' · '.join(tags)}")
+    if web_url:
+        lines.append(f"{SUB_ITEM}{LINK_LABEL}: {web_url.rstrip('/')}/activities/{schedule.id}")
     return lines
 
 
