@@ -160,17 +160,16 @@ def test_format_schedules(schedules, student, today):
     assert lines[5].startswith("2. **")
 
 
-def test_format_schedules_states_target_group_without_guessing(schedules, student, today):
-    """ไม่มีป้าย "ไม่แน่ใจเรื่องสิทธิ์สมัคร" แล้ว (2026-11-10) บอกแค่ว่ารอบเปิดให้กลุ่มไหน"""
+def test_student_list_has_no_group_or_uncertain_tags(schedules, student, today):
+    """รายการของนักศึกษาผ่าน filter_eligible แล้ว ไม่ต้องมีป้ายกลุ่มหรือ "ไม่แน่ใจ" (2026-11-10)"""
     eligible = filter_eligible(schedules, student, today)
 
     text = format_schedules(eligible)
+    staff = format_schedules(eligible, for_staff=True)
 
-    assert "ไม่แน่ใจ" not in text
-    items = [block for block in _items(text) if RESTRICTED_TAG in block]
-    assert len(items) == 1
-    assert "จิตอาสาซ่อมแซมอุปกรณ์การเรียน" in items[0]
-    assert f"   - หมายเหตุ: {RESTRICTED_TAG}: นักศึกษารหัส 65 · " in items[0]
+    assert 108 in {item.schedule.id for item in eligible}  # รอบที่จำกัดรหัส 65 ยังอยู่
+    assert "ไม่แน่ใจ" not in text and RESTRICTED_TAG not in text
+    assert f"   - หมายเหตุ: {RESTRICTED_TAG}: นักศึกษารหัส 65 · " in staff
 
 
 def test_format_schedules_links_each_round(schedules, student, today):
@@ -271,8 +270,8 @@ def test_format_recommendations(summary, schedules, student, today):
     assert items[0].startswith("1. **จิตอาสาพัฒนาชุมชนรอบมหาวิทยาลัย ครั้งที่ 2**")
     # หมวดของรอบตรงกับหมวดที่ขาด จึงไม่พูดชื่อหมวดซ้ำ
     assert "   - ช่วยปิดช่องว่างได้ 6 ชม." in items[0]
-    assert f"{RESTRICTED_TAG}: นักศึกษารหัส 65" in items[1]  # รอบ 108 ที่จำกัดรหัส 65
-    assert "ไม่แน่ใจ" not in text
+    assert "จิตอาสาซ่อมแซม" in items[1]  # รอบ 108 ที่จำกัดรหัส 65
+    assert RESTRICTED_TAG not in text and "ไม่แน่ใจ" not in text
 
 
 def test_format_recommendations_names_gap_when_labels_differ(schedules):
@@ -417,3 +416,34 @@ def _items(text: str) -> list[str]:
         else:
             items.append(line)
     return items
+
+
+def test_student_list_states_the_entry_year_used_for_filtering(schedules, student, today):
+    """AI Connect 2026-11-10: โมเดลไม่รู้รหัสแล้วเดาว่า "รหัส 68" (จริงคือ 66) ต้องบอกจาก token"""
+    from aura_agent.processing import entry_year
+    from aura_agent.processing.formatter import STUDENT_YEAR_NOTE
+
+    eligible = filter_eligible(schedules, student, today)
+    year = entry_year(student)
+
+    text = format_schedules(eligible, student_year=year)
+    empty = format_schedules([], student_year=year)
+    staff = format_schedules(eligible, for_staff=True, student_year=year)
+
+    note = STUDENT_YEAR_NOTE.format(year="65")
+    assert year == "65"
+    assert text.splitlines()[1] == note
+    assert empty.splitlines()[1] == note
+    assert note not in staff
+    assert "ผู้ใช้เป็นนักศึกษารหัส" not in format_schedules(eligible)  # ไม่รู้รหัส = ไม่พูด
+
+
+def test_recommendations_state_the_entry_year(summary, schedules, student, today):
+    from aura_agent.processing.formatter import STUDENT_YEAR_NOTE
+
+    gaps = analyze_gaps(summary).gaps
+    text = format_recommendations(
+        recommend(gaps, filter_eligible(schedules, student, today)), student_year="65"
+    )
+
+    assert text.splitlines()[1] == STUDENT_YEAR_NOTE.format(year="65")

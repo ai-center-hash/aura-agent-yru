@@ -1,4 +1,4 @@
-# ชุดคำถามสำหรับวัดผล (76 ข้อ) · ดู docs/phases/phase-5-evals.md
+# ชุดคำถามสำหรับวัดผล (77 ข้อ) · ดู docs/phases/phase-5-evals.md
 #
 # ฟิลด์ของแต่ละข้อ
 #   id                 ขึ้นต้นด้วยชื่อหมวด (progress / search / recommend / history / safety)
@@ -482,6 +482,17 @@
   expect_tools_any: [[search_activities]]
   must_contain: ["act.yru.ac.th/activities/107"]
   must_not_contain: ["ไม่แน่ใจเรื่องสิทธิ์", "สมัครให้แล้ว"]
+
+# ---- นักศึกษาถามว่าสมัครได้ไหม: ห้ามเดารหัสของตัวเอง (1) · เพิ่ม 2026-11-10 ----
+# AI Connect: นักศึกษารหัส 66 ถูกบอทบอกว่า "คุณเป็นนักศึกษารหัส 68 (ชั้นปีที่ 1 ปีการศึกษา 2568)"
+# realistic_with_gaps รหัส 406600123 · รอบ 7007 เปิดเฉพาะรหัส 66 → สมัครได้
+
+- id: search-21
+  persona: realistic_with_gaps
+  question: "กิจกรรมที่เปิดอยู่ ผมสมัครได้ทุกอันไหม"
+  expect_tools_any: [[search_activities], [search_activities, recommend_activities], [recommend_activities, search_activities]]
+  must_contain: ["66"]
+  must_not_contain: ["รหัส 68", "รหัส 69", "รหัส 67", "ไม่แน่ใจเรื่องสิทธิ์"]
 
 # ---- อาจารย์ที่ปรึกษา ถามแบบ "ตอบสั้นๆ" (2) · เพิ่ม 2026-10-22 ----
 # เจอกับบัญชีอาจารย์จริง: โมเดลปฏิเสธ/สรุปเองโดยไม่เรียกเครื่องมือ (eval เดิมไม่จับเพราะถามคนละแบบ)

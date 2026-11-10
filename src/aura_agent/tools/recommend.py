@@ -11,6 +11,7 @@ from ..config import get_settings
 from ..data import NoActivityFrame, get_act_client
 from ..processing import (
     analyze_gaps,
+    entry_year,
     filter_eligible,
     format_recommendations,
     recommend,
@@ -61,4 +62,8 @@ async def recommend_activities(
         gaps = ", ".join(gap.category_name for gap in report.gaps)
         return NO_MATCH_MESSAGE.format(gaps=gaps)
 
-    return format_recommendations(recommendations, web_url=get_settings().act_web_base_url)
+    return format_recommendations(
+        recommendations,
+        web_url=get_settings().act_web_base_url,
+        student_year=entry_year(student),
+    )
