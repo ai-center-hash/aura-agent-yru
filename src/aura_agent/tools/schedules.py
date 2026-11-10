@@ -34,7 +34,8 @@ async def search_activities(
     keyword: คำค้นในชื่อกิจกรรม เช่น "จิตอาสา"
     date_from, date_to: ช่วงวันที่ **จัดกิจกรรม** รูปแบบ YYYY-MM-DD (ปี ค.ศ.) เช่น 2026-11-05
 
-    ถ้าผู้ใช้เป็นบุคลากร จะได้ทุกรอบที่ยังรับสมัคร (ไม่คัดตามคุณสมบัติ) พร้อมป้ายรอบที่เปิดเฉพาะบางกลุ่ม
+    ถ้าผู้ใช้เป็นบุคลากรหรือไม่ได้เข้าสู่ระบบ จะได้ทุกรอบที่ยังรับสมัคร พร้อมกลุ่มนักศึกษาที่แต่ละรอบเปิดรับ
+    (บุคลากรไม่ใช่ผู้สมัคร)
     """
     student = student_from(state)
     if student is None:
@@ -56,7 +57,9 @@ async def search_activities(
     )
     if not student.is_student:
         # บุคลากร/ผู้ใช้ทั่วไปไม่ได้สมัครเอง (หรือไม่รู้คุณสมบัติ) จึงแสดงทุกรอบที่ยังรับสมัคร
-        return format_schedules(filter_open(schedules, clock.today()), for_staff=True)
+        return format_schedules(
+            filter_open(schedules, clock.today()), for_staff=True, anonymous=student.is_anonymous
+        )
     eligible = filter_eligible(schedules, student, clock.today())
     return format_schedules(eligible)
 

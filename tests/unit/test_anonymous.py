@@ -10,7 +10,11 @@ from langgraph.checkpoint.memory import InMemorySaver
 from aura_agent.agent import build_graph, run_config, state_serializer
 from aura_agent.agent.prompts import ANONYMOUS_TYPE
 from aura_agent.processing import StudentProfile
-from aura_agent.processing.formatter import OPEN_SCHEDULES_TITLE, format_anonymous
+from aura_agent.processing.formatter import (
+    ANONYMOUS_SCHEDULES_NOTE,
+    OPEN_SCHEDULES_TITLE,
+    format_anonymous,
+)
 from aura_agent.tools import (
     get_advisee_progress,
     get_my_progress,
@@ -47,6 +51,7 @@ async def test_anonymous_users_can_search_all_open_rounds(act_client, frozen_tod
     text = await search_activities.ainvoke({"state": {"student": ANONYMOUS}}, NO_TOKEN)
 
     assert text.startswith(f"[{OPEN_SCHEDULES_TITLE}]")
+    assert ANONYMOUS_SCHEDULES_NOTE in text  # ไม่ใช่ข้อความของบุคลากร
     assert act_client.last("get_schedules")["jwt"] == ""
 
 

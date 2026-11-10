@@ -19,7 +19,14 @@ from aura_agent.processing import (
     format_not_student,
     format_schedules,
 )
-from aura_agent.processing.formatter import MAX_ITEMS, OPEN_SCHEDULES_TITLE, RESTRICTED_TAG
+from aura_agent.processing.formatter import (
+    ANONYMOUS_SCHEDULES_NOTE,
+    MAX_ITEMS,
+    OPEN_SCHEDULES_TITLE,
+    RESTRICTED_TAG,
+    STAFF_SCHEDULES_NOTE,
+    TARGET_CODES_TEXT,
+)
 from aura_agent.tools import (
     get_my_progress,
     get_my_registrations,
@@ -93,6 +100,67 @@ def test_staff_schedule_list_tags_restricted_rounds(schedules, frozen_today):
         1 for item in items[:MAX_ITEMS] if item.schedule.is_restricted
     )
     assert "ไม่แน่ใจเรื่องสิทธิ์สมัคร" not in text
+
+
+def test_staff_schedule_list_says_staff_are_not_applicants(schedules, frozen_today):
+    """ทดสอบจริง 2026-11-10: โมเดลบอกบุคลากรว่า "สมัครได้ทุกรอบ" เพราะหัวข้อเดิมเขียนว่าทุกกลุ่มผู้สมัคร"""
+    items = filter_open(schedules, frozen_today)
+
+    staff_text = format_schedules(items, for_staff=True)
+    anonymous_text = format_schedules(items, for_staff=True, anonymous=True)
+    student_text = format_schedules(items)
+
+    assert staff_text.splitlines()[1] == STAFF_SCHEDULES_NOTE
+    assert "ห้ามบอกว่าผู้ถามสมัครได้" in STAFF_SCHEDULES_NOTE
+    assert anonymous_text.splitlines()[1] == ANONYMOUS_SCHEDULES_NOTE
+    assert STAFF_SCHEDULES_NOTE not in student_text
+    assert ANONYMOUS_SCHEDULES_NOTE not in student_text
+    assert "ทุกกลุ่มผู้สมัคร" not in staff_text
+
+
+def _restricted(schedule, **update):
+    return schedule.model_copy(
+        update={
+            "is_restricted": True,
+            "target_student_codes": [],
+            "target_student_year_prefix": [],
+            "target_faculties": [],
+            "target_student_status": None,
+            "is_full": False,
+            "registration_end_date": None,
+            **update,
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    ("update", "expected"),
+    [
+        ({"target_student_year_prefix": ["66"]}, f"{RESTRICTED_TAG}: รุ่นรหัส 66"),
+        (
+            {"target_student_year_prefix": ["66", "67"], "target_faculties": ["คณะครุศาสตร์"]},
+            f"{RESTRICTED_TAG}: รุ่นรหัส 66, 67 · คณะครุศาสตร์",
+        ),
+        ({"target_student_status": "transfer"}, f"{RESTRICTED_TAG}: นักศึกษาเทียบโอน"),
+        ({}, RESTRICTED_TAG),
+    ],
+)
+def test_restricted_tag_names_the_target_group(schedules, frozen_today, update, expected):
+    schedule = _restricted(schedules[0], **update)
+
+    text = format_schedules(filter_open([schedule], frozen_today), for_staff=True)
+
+    assert f"หมายเหตุ: {expected}" in text.splitlines()[-1]
+    assert text.splitlines()[-1].endswith(expected)
+
+
+def test_restricted_tag_never_shows_student_codes(schedules, frozen_today):
+    schedule = _restricted(schedules[0], target_student_codes=["406600101", "406600102"])
+
+    text = format_schedules(filter_open([schedule], frozen_today), for_staff=True)
+
+    assert f"{RESTRICTED_TAG}: {TARGET_CODES_TEXT}" in text
+    assert "406600101" not in text and "406600102" not in text
 
 
 def test_not_student_text_names_the_unit():
