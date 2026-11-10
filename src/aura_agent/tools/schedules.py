@@ -8,6 +8,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 
 from .. import clock
+from ..config import get_settings
 from ..data import get_act_client
 from ..processing import filter_eligible, filter_open, format_schedules
 from .context import BAD_DATE_MESSAGE, NO_STUDENT_MESSAGE, optional_jwt_from, student_from
@@ -55,13 +56,17 @@ async def search_activities(
         date_to=activity_to,
         search=keyword,
     )
+    web_url = get_settings().act_web_base_url
     if not student.is_student:
         # บุคลากร/ผู้ใช้ทั่วไปไม่ได้สมัครเอง (หรือไม่รู้คุณสมบัติ) จึงแสดงทุกรอบที่ยังรับสมัคร
         return format_schedules(
-            filter_open(schedules, clock.today()), for_staff=True, anonymous=student.is_anonymous
+            filter_open(schedules, clock.today()),
+            for_staff=True,
+            anonymous=student.is_anonymous,
+            web_url=web_url,
         )
     eligible = filter_eligible(schedules, student, clock.today())
-    return format_schedules(eligible)
+    return format_schedules(eligible, web_url=web_url)
 
 
 def _parse_date(value: str | None) -> date | None:

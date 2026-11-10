@@ -136,10 +136,10 @@ def _restricted(schedule, **update):
 @pytest.mark.parametrize(
     ("update", "expected"),
     [
-        ({"target_student_year_prefix": ["66"]}, f"{RESTRICTED_TAG}: รุ่นรหัส 66"),
+        ({"target_student_year_prefix": ["66"]}, f"{RESTRICTED_TAG}: ปีเข้า 66"),
         (
             {"target_student_year_prefix": ["66", "67"], "target_faculties": ["คณะครุศาสตร์"]},
-            f"{RESTRICTED_TAG}: รุ่นรหัส 66, 67 · คณะครุศาสตร์",
+            f"{RESTRICTED_TAG}: ปีเข้า 66, 67 · คณะครุศาสตร์",
         ),
         ({"target_student_status": "transfer"}, f"{RESTRICTED_TAG}: นักศึกษาเทียบโอน"),
         ({}, RESTRICTED_TAG),

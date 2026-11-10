@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     # Activity API
     act_api_base_url: str = "https://api831.yru.ac.th/act/api"
     act_api_timeout_s: float = Field(default=15, gt=0)
+    # เว็บระบบกิจกรรม: ลิงก์ "สมัคร/ดูเงื่อนไข" ของแต่ละรอบคือ {ค่านี้}/activities/{id ของรอบ}
+    act_web_base_url: str = "https://act.yru.ac.th"
 
     # ยืนยันตัวตน: passport = ถาม YRU Passport แล้วเรียกเส้น public ด้วยรหัสนักศึกษา
     #              activity_me = ส่ง token ตรงไปที่ /summary/me (เมื่อ Activity API รับ token ได้แล้ว)

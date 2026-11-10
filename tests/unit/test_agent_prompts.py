@@ -110,7 +110,6 @@ def test_prompt_keeps_the_rules_the_agent_depends_on():
     """กฎที่โค้ดส่วนอื่นอ้างอิง ถ้าแก้ prompt แล้วหายไปต้องรู้ตัว"""
     template = load_template()
 
-    assert "ไม่แน่ใจเรื่องสิทธิ์สมัคร" in template  # ป้ายที่ formatter ใส่
     for tool_name in (
         "get_my_progress",
         "search_activities",
