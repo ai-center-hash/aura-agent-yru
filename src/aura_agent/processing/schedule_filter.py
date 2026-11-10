@@ -68,6 +68,20 @@ def filter_open(schedules: list[Schedule], today: date) -> list[EligibleSchedule
     ]
 
 
+def filter_for_cohort(items: list[EligibleSchedule], cohort: str) -> list[EligibleSchedule]:
+    """ตัดรอบที่จำกัดรหัสปีที่เข้าไว้ให้รุ่นอื่น (ใช้กับผลของ `filter_open` เมื่อบุคลากรถามตามรุ่นรหัส)
+
+    รอบที่จำกัดด้วยเงื่อนไขอื่น (คณะ/รายชื่อ/ประเภท) ยังอยู่ formatter จะติดป้ายกลุ่มให้
+    """
+    year = cohort.strip()[-2:]
+    kept = []
+    for item in items:
+        targets = {str(v).strip()[-2:] for v in item.schedule.target_student_year_prefix}
+        if not targets or year in targets:
+            kept.append(item)
+    return kept
+
+
 def _registration_closed(schedule: Schedule, today: date) -> bool:
     """ปิดรับสมัครแล้วหรือยัง (วันสุดท้ายยังนับว่าสมัครได้)
 

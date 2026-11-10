@@ -36,7 +36,7 @@ from .registration_mapper import (
     map_registrations,
     status_label,
 )
-from .schedule_filter import entry_year, filter_eligible, filter_open
+from .schedule_filter import entry_year, filter_eligible, filter_for_cohort, filter_open
 
 __all__ = [
     "format_advisee_progress",
@@ -53,6 +53,7 @@ __all__ = [
     "attendance_hours",
     "entry_year",
     "filter_eligible",
+    "filter_for_cohort",
     "filter_open",
     "format_hours",
     "format_anonymous",

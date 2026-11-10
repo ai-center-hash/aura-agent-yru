@@ -15,11 +15,24 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 
+from .. import clock
+from ..config import get_settings
 from ..data import NoActivityFrame, NotYourAdvisee, UpstreamNotFound, get_act_client
-from ..processing import analyze_gaps, format_advisee_progress, format_advisees
+from ..processing import (
+    analyze_gaps,
+    filter_for_cohort,
+    filter_open,
+    format_advisee_progress,
+    format_advisees,
+    format_schedules,
+)
+from ..processing.formatter import COHORT_SCHEDULES_NOTE
 from .context import LOGIN_REQUIRED_MESSAGE, NO_STUDENT_MESSAGE, jwt_from, student_from
 
 STUDENT_CODE = re.compile(r"^\d{9,10}$")
+# "นักศึกษารหัส 67" = รุ่นปีที่เข้า ไม่ใช่รหัสนักศึกษาคนใดคนหนึ่ง (AI Connect/eval 2026-11-10:
+# บุคลากรถาม "นักศึกษารหัส 67 สมัครกิจกรรมอะไรได้บ้าง" แล้วโมเดลเรียก tool นี้ด้วย "67")
+COHORT_CODE = re.compile(r"^\d{2}$")
 
 STAFF_ONLY_MESSAGE = "ส่วนนี้ใช้ได้เฉพาะอาจารย์ที่ปรึกษา นักศึกษาดูได้เฉพาะข้อมูลของตัวเอง"
 BAD_CODE_MESSAGE = (
@@ -88,6 +101,9 @@ async def get_advisee_progress(
         return STAFF_ONLY_MESSAGE
 
     code = (student_code or "").strip()
+    if COHORT_CODE.match(code):
+        # โมเดลไม่ยอมเรียก search_activities ต่อเอง (eval search-26) จึงตอบรอบกิจกรรมของรุ่นนี้ให้เลย
+        return await _cohort_schedules(code)
     if not STUDENT_CODE.match(code):
         return BAD_CODE_MESSAGE.format(value=student_code)
 
@@ -109,3 +125,13 @@ async def get_advisee_progress(
         message = ADMIN_NO_FRAME_MESSAGE if as_admin else NO_FRAME_MESSAGE
         return message.format(code=code, reason=missing.detail or missing.message_th)
     return format_advisee_progress(advisee, analyze_gaps(summary), as_admin=as_admin)
+
+
+async def _cohort_schedules(cohort: str) -> str:
+    """รอบที่ยังรับสมัครซึ่งนักศึกษารหัส `cohort` สมัครได้ (ข้อมูลสาธารณะ ไม่แนบ token)"""
+    schedules = await get_act_client().get_schedules("")
+    items = filter_for_cohort(filter_open(schedules, clock.today()), cohort)
+    listing = format_schedules(items, for_staff=True, web_url=get_settings().act_web_base_url)
+    header, _, rest = listing.partition("\n")
+    note = COHORT_SCHEDULES_NOTE.format(cohort=cohort)
+    return "\n".join(part for part in (header, note, rest) if part)

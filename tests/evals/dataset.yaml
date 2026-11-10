@@ -1,4 +1,4 @@
-# ชุดคำถามสำหรับวัดผล (84 ข้อ) · ดู docs/phases/phase-5-evals.md
+# ชุดคำถามสำหรับวัดผล (85 ข้อ) · ดู docs/phases/phase-5-evals.md
 #
 # ฟิลด์ของแต่ละข้อ
 #   id                 ขึ้นต้นด้วยชื่อหมวด (progress / search / recommend / history / safety)
@@ -633,3 +633,14 @@
   expect_tools_any: [[search_activities], [search_activities, recommend_activities]]
   must_contain: ["จิตอาสาซ่อมแซม"]
   must_not_contain: ["ไม่แน่ใจ", "อาจไม่", "รหัส 68", "รหัส 66"]
+
+# ---- บุคลากรถามตามรุ่นรหัส (1) · เพิ่ม 2026-11-10 ----
+# เดิมโมเดลส่ง "67" ให้ get_advisee_progress แล้วตอบว่ารหัสไม่ครบหลัก · รอบ 104 เปิดเฉพาะรหัส 67 คณะครุศาสตร์
+
+- id: search-26
+  persona: staff_member
+  question: "นักศึกษารหัส 67 สมัครกิจกรรมอะไรได้บ้าง"
+  # get_advisee_progress รับ "67" แล้วตอบรอบของรุ่นนี้เอง (โมเดลไม่ยอมเรียก search_activities ต่อ)
+  expect_tools_any: [[search_activities], [get_advisee_progress], [get_advisee_progress, search_activities]]
+  must_contain: ["ค่ายอาสาพัฒนาโรงเรียนตำรวจตระเวนชายแดน"]
+  must_not_contain: ["9–10 หลัก", "9-10 หลัก", "ไม่แน่ใจเรื่องสิทธิ์"]
